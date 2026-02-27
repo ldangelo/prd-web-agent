@@ -1,0 +1,89 @@
+import React from "react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { NotificationBell } from "../NotificationBell";
+
+beforeEach(() => {
+  global.fetch = jest.fn();
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe("NotificationBell", () => {
+  it("renders bell icon button", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ count: 0, notifications: [] }),
+    });
+
+    render(<NotificationBell />);
+
+    expect(
+      screen.getByRole("button", { name: /notifications/i })
+    ).toBeInTheDocument();
+  });
+
+  it("shows unread count badge when there are unread notifications", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        count: 5,
+        notifications: [],
+      }),
+    });
+
+    render(<NotificationBell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("5")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show badge when unread count is zero", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ count: 0, notifications: [] }),
+    });
+
+    render(<NotificationBell />);
+
+    await waitFor(() => {
+      expect(screen.queryByText("0")).not.toBeInTheDocument();
+    });
+  });
+
+  it("toggles dropdown on click", async () => {
+    const user = userEvent.setup();
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        count: 1,
+        notifications: [
+          {
+            id: "n1",
+            type: "comment",
+            message: "New comment on PRD",
+            read: false,
+            createdAt: "2026-01-15T10:00:00Z",
+          },
+        ],
+      }),
+    });
+
+    render(<NotificationBell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("1")).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: /notifications/i })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("New comment on PRD")).toBeInTheDocument();
+    });
+  });
+});

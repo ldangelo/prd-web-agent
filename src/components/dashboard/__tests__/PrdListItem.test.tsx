@@ -1,0 +1,153 @@
+/**
+ * PrdListItem component tests.
+ *
+ * Verifies rendering of PRD data in a table row with status badge and tag pills.
+ */
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { PrdListItem } from "../PrdListItem";
+
+// ---------------------------------------------------------------------------
+// Mock next/navigation
+// ---------------------------------------------------------------------------
+const mockPush = jest.fn();
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
+// ---------------------------------------------------------------------------
+// Test data
+// ---------------------------------------------------------------------------
+
+const basePrd = {
+  id: "prd_001",
+  title: "User Authentication Flow",
+  status: "DRAFT" as const,
+  tags: ["auth", "security"],
+  currentVersion: 1,
+  updatedAt: "2026-02-24T16:00:00.000Z",
+  project: { id: "proj_001", name: "Project Alpha" },
+  author: { id: "user_1", name: "Alice" },
+};
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe("PrdListItem", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should render all PRD fields", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={basePrd} />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.getByText("User Authentication Flow")).toBeInTheDocument();
+    expect(screen.getByText("Project Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.getByText("Draft")).toBeInTheDocument();
+    expect(screen.getByText("auth")).toBeInTheDocument();
+    expect(screen.getByText("security")).toBeInTheDocument();
+    expect(screen.getByText("v1")).toBeInTheDocument();
+  });
+
+  it("should render Draft status badge with gray styling", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={{ ...basePrd, status: "DRAFT" }} />
+        </tbody>
+      </table>,
+    );
+
+    const badge = screen.getByText("Draft");
+    expect(badge.className).toContain("bg-gray");
+  });
+
+  it("should render In Review status badge with yellow styling", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={{ ...basePrd, status: "IN_REVIEW" }} />
+        </tbody>
+      </table>,
+    );
+
+    const badge = screen.getByText("In Review");
+    expect(badge.className).toContain("bg-yellow");
+  });
+
+  it("should render Approved status badge with green styling", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={{ ...basePrd, status: "APPROVED" }} />
+        </tbody>
+      </table>,
+    );
+
+    const badge = screen.getByText("Approved");
+    expect(badge.className).toContain("bg-green");
+  });
+
+  it("should render Submitted status badge with blue styling", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={{ ...basePrd, status: "SUBMITTED" }} />
+        </tbody>
+      </table>,
+    );
+
+    const badge = screen.getByText("Submitted");
+    expect(badge.className).toContain("bg-blue");
+  });
+
+  it("should navigate to /prd/[id] when row is clicked", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={basePrd} />
+        </tbody>
+      </table>,
+    );
+
+    const row = screen.getByText("User Authentication Flow").closest("tr");
+    fireEvent.click(row!);
+
+    expect(mockPush).toHaveBeenCalledWith("/prd/prd_001");
+  });
+
+  it("should render tags as pills", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={basePrd} />
+        </tbody>
+      </table>,
+    );
+
+    const authTag = screen.getByText("auth");
+    const securityTag = screen.getByText("security");
+    expect(authTag.className).toContain("rounded");
+    expect(securityTag.className).toContain("rounded");
+  });
+
+  it("should handle empty tags array", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={{ ...basePrd, tags: [] }} />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.getByText("User Authentication Flow")).toBeInTheDocument();
+  });
+});
