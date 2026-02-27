@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  AUTHOR
+  REVIEWER
+  ADMIN
+}
+
+enum PrdStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  SUBMITTED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  role          Role           @default(AUTHOR)
+  avatarUrl     String?
+  image         String?
+  emailVerified DateTime?
+  oauthId       String?        @unique
+  oauthProvider String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  prds          Prd[]          @relation("PrdAuthor")
+  coAuthoredPrds PrdCoAuthor[]
+  comments      Comment[]
+  notifications Notification[]
+  auditEntries  AuditEntry[]
+  projectMemberships ProjectMember[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Project {
+  id              String          @id @default(cuid())
+  name            String
+  description     String?
+  confluenceSpace String?
+  jiraProject     String?
+  gitRepo         String?
+  beadsProject    String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  prds            Prd[]
+  members         ProjectMember[]
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  isReviewer Boolean @default(false)
+
+  project   Project  @relation(fields: [projectId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+}
+
+model Prd {
+  id              String      @id @default(cuid())
+  title           String
+  projectId       String
+  authorId        String
+  status          PrdStatus   @default(DRAFT)
+  currentVersion  Int         @default(1)
+  tags            String[]    @default([])
+  confluencePageId String?
+  jiraEpicKey      String?
+  gitPrUrl         String?
+  beadsIssueId     String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  project         Project     @relation(fields: [projectId], references: [id])
+  author          User        @relation("PrdAuthor", fields: [authorId], references: [id])
+  coAuthors       PrdCoAuthor[]
+  versions        PrdVersion[]
+  comments        Comment[]
+  notifications   Notification[]
+  auditEntries    AuditEntry[]
+}
+
+model PrdCoAuthor {
+  id      String @id @default(cuid())
+  prdId   String
+  userId  String
+
+  prd     Prd    @relation(fields: [prdId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@unique([prdId, userId])
+}
+
+model PrdVersion {
+  id            String   @id @default(cuid())
+  prdId         String
+  version       Int
+  content       String
+  changeSummary String?
+  authorId      String
+  sessionId     String?
+  createdAt     DateTime @default(now())
+
+  prd           Prd      @relation(fields: [prdId], references: [id])
+}
+
+model Comment {
+  id         String    @id @default(cuid())
+  prdId      String
+  authorId   String
+  parentId   String?
+  body       String
+  resolved   Boolean   @default(false)
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  prd        Prd       @relation(fields: [prdId], references: [id])
+  author     User      @relation(fields: [authorId], references: [id])
+  parent     Comment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies    Comment[] @relation("CommentThread")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  prdId     String?
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  prd       Prd?     @relation(fields: [prdId], references: [id])
+}
+
+model AuditEntry {
+  id         String   @id @default(cuid())
+  prdId      String?
+  userId     String
+  action     String
+  fromStatus String?
+  toStatus   String?
+  detail     Json?
+  createdAt  DateTime @default(now())
+
+  prd        Prd?     @relation(fields: [prdId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model GlobalSettings {
+  id              String  @id @default("global")
+  confluenceSpace String?
+  jiraProject     String?
+  gitRepo         String?
+  beadsProject    String?
+  llmProvider     String  @default("anthropic")
+  llmModel        String  @default("claude-sonnet-4-20250514")
+  llmThinkingLevel String @default("medium")
+  blockApprovalOnUnresolvedComments Boolean @default(true)
+  confluenceToken String?
+  jiraToken       String?
+  gitToken        String?
+  updatedAt       DateTime @updatedAt
+}
