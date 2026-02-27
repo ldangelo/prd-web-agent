@@ -14,10 +14,7 @@ export interface SubmissionModalProps {
 }
 
 const INITIAL_STEPS: SubmissionStep[] = [
-  { name: "confluence", status: "pending" },
-  { name: "jira", status: "pending" },
-  { name: "git", status: "pending" },
-  { name: "beads", status: "pending" },
+  { name: "github", status: "pending" },
 ];
 
 const POLL_INTERVAL_MS = 2000;
@@ -27,7 +24,8 @@ const POLL_INTERVAL_MS = 2000;
  *
  * On open, POSTs to /api/prds/[id]/submit to start the pipeline,
  * then polls /api/prds/[id]/submit/status for progress updates.
- * The close button is only enabled when all steps are terminal (success/failed).
+ * Shows a single "Creating GitHub PR" step with success/failure state.
+ * The close button is only enabled when the step is terminal (success/failed).
  */
 export function SubmissionModal({
   prdId,
@@ -124,7 +122,7 @@ export function SubmissionModal({
       aria-label="Submitting PRD"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     >
-      <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">
             Submitting PRD

@@ -80,15 +80,14 @@ model VerificationToken {
 }
 
 model Project {
-  id              String          @id @default(cuid())
-  name            String
-  description     String?
-  confluenceSpace String?
-  jiraProject     String?
-  gitRepo         String?
-  beadsProject    String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id               String          @id @default(cuid())
+  name             String
+  description      String?
+  githubRepo       String          @unique
+  defaultLabels    String[]        @default([])
+  defaultReviewers String[]        @default([])
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   prds            Prd[]
   members         ProjectMember[]
@@ -114,10 +113,9 @@ model Prd {
   status          PrdStatus   @default(DRAFT)
   currentVersion  Int         @default(1)
   tags            String[]    @default([])
-  confluencePageId String?
-  jiraEpicKey      String?
-  gitPrUrl         String?
-  beadsIssueId     String?
+  githubPrUrl      String?
+  githubPrNumber   Int?
+  githubBranch     String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -200,16 +198,9 @@ model AuditEntry {
 
 model GlobalSettings {
   id              String  @id @default("global")
-  confluenceSpace String?
-  jiraProject     String?
-  gitRepo         String?
-  beadsProject    String?
   llmProvider     String  @default("anthropic")
   llmModel        String  @default("claude-sonnet-4-20250514")
   llmThinkingLevel String @default("medium")
   blockApprovalOnUnresolvedComments Boolean @default(true)
-  confluenceToken String?
-  jiraToken       String?
-  gitToken        String?
   updatedAt       DateTime @updatedAt
 }

@@ -32,14 +32,6 @@ jest.mock("next-auth/providers/github", () => {
   };
 });
 
-// Mock Google provider in case it's still imported during transition
-jest.mock("next-auth/providers/google", () => {
-  return {
-    __esModule: true,
-    default: (opts: any) => ({ id: "google", name: "Google", ...opts }),
-  };
-});
-
 jest.mock("@auth/prisma-adapter", () => ({
   PrismaAdapter: jest.fn(() => ({})),
 }));

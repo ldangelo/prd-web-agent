@@ -19,10 +19,9 @@ import { validateBody } from "@/lib/api/validate";
 const CreateProjectSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
-  confluenceSpace: z.string().optional(),
-  jiraProject: z.string().optional(),
-  gitRepo: z.string().optional(),
-  beadsProject: z.string().optional(),
+  githubRepo: z.string().min(1, "githubRepo is required"),
+  defaultLabels: z.array(z.string()).optional().default([]),
+  defaultReviewers: z.array(z.string()).optional().default([]),
 });
 
 // ---------------------------------------------------------------------------
@@ -76,10 +75,9 @@ export async function POST(request: NextRequest) {
       data: {
         name: data.name,
         description: data.description,
-        confluenceSpace: data.confluenceSpace,
-        jiraProject: data.jiraProject,
-        gitRepo: data.gitRepo,
-        beadsProject: data.beadsProject,
+        githubRepo: data.githubRepo,
+        defaultLabels: data.defaultLabels,
+        defaultReviewers: data.defaultReviewers,
       },
     });
 

@@ -15,10 +15,9 @@ interface ProjectDetail {
   id: string;
   name: string;
   description: string;
-  confluenceSpace: string | null;
-  jiraProject: string | null;
-  gitRepo: string | null;
-  beadsProject: string | null;
+  githubRepo: string;
+  defaultLabels: string[];
+  defaultReviewers: string[];
   members: Member[];
 }
 
@@ -88,40 +87,36 @@ export default function ProjectDetailPage() {
         <p className="mt-4 text-gray-600">{project.description}</p>
       )}
 
-      <section className="mt-8" aria-labelledby="integrations-heading">
+      <section className="mt-8" aria-labelledby="github-heading">
         <h2
-          id="integrations-heading"
+          id="github-heading"
           className="text-lg font-semibold text-gray-900"
         >
-          Integration Settings
+          GitHub Settings
         </h2>
         <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-md border border-gray-200 p-4">
             <dt className="text-sm font-medium text-gray-500">
-              Confluence Space
+              GitHub Repository
             </dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {project.confluenceSpace ?? "Not configured"}
+              {project.githubRepo}
             </dd>
           </div>
           <div className="rounded-md border border-gray-200 p-4">
-            <dt className="text-sm font-medium text-gray-500">Jira Project</dt>
+            <dt className="text-sm font-medium text-gray-500">Default Labels</dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {project.jiraProject ?? "Not configured"}
+              {project.defaultLabels.length > 0
+                ? project.defaultLabels.join(", ")
+                : "None"}
             </dd>
           </div>
           <div className="rounded-md border border-gray-200 p-4">
-            <dt className="text-sm font-medium text-gray-500">Git Repo</dt>
+            <dt className="text-sm font-medium text-gray-500">Default Reviewers</dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {project.gitRepo ?? "Not configured"}
-            </dd>
-          </div>
-          <div className="rounded-md border border-gray-200 p-4">
-            <dt className="text-sm font-medium text-gray-500">
-              Beads Project
-            </dt>
-            <dd className="mt-1 text-sm text-gray-900">
-              {project.beadsProject ?? "Not configured"}
+              {project.defaultReviewers.length > 0
+                ? project.defaultReviewers.join(", ")
+                : "None"}
             </dd>
           </div>
         </dl>

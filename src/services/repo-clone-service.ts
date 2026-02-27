@@ -5,7 +5,12 @@ import * as path from "path";
 /**
  * Manages git repository clones on EFS for agent context.
  *
- * - Clones repos on project creation
+ * TASK-068: Updated for per-user clones using OAuth token.
+ *
+ * - Per-user clone paths: /efs/repos/<user-id>/<project-id>/
+ * - Uses the user's GitHub OAuth token (passed as parameter)
+ * - Token injected into clone URL for HTTPS authentication
+ * - Surfaces clear errors on authentication failures (401)
  * - Periodic git pull every 15 minutes
  * - On-demand sync before agent sessions
  * - Cleanup on project deletion
@@ -22,21 +27,28 @@ export class RepoCloneService {
   }
 
   /**
-   * Get the local clone directory for a project.
+   * Get the local clone directory for a user's project.
+   * Path: /efs/repos/<userId>/<projectId>/
    */
-  getCloneDir(projectId: string): string {
-    return path.join(this.efsReposDir, projectId);
+  getCloneDir(userId: string, projectId: string): string {
+    return path.join(this.efsReposDir, userId, projectId);
   }
 
   /**
-   * Clone a git repository for a project.
+   * Clone a git repository for a user's project.
+   *
+   * @param userId - The user who owns this clone
+   * @param projectId - The project ID
+   * @param githubRepo - The GitHub repo HTTPS URL (e.g., https://github.com/org/repo.git)
+   * @param oauthToken - The user's GitHub OAuth access token
    */
   async cloneRepo(
+    userId: string,
     projectId: string,
-    gitRepo: string,
-    gitToken: string,
+    githubRepo: string,
+    oauthToken: string,
   ): Promise<void> {
-    const cloneDir = this.getCloneDir(projectId);
+    const cloneDir = this.getCloneDir(userId, projectId);
 
     try {
       await fs.access(cloneDir);
@@ -50,44 +62,67 @@ export class RepoCloneService {
     await fs.mkdir(cloneDir, { recursive: true });
 
     // Inject token into the URL for HTTPS clones
-    const authedUrl = gitRepo.replace(
+    const authedUrl = githubRepo.replace(
       "https://",
-      `https://x-access-token:${gitToken}@`,
+      `https://x-access-token:${oauthToken}@`,
     );
 
-    await this.execAsync(`git clone ${authedUrl} ${cloneDir}`, {
-      timeout: 120_000,
-    });
+    try {
+      await this.execAsync(`git clone ${authedUrl} ${cloneDir}`, {
+        timeout: 120_000,
+      });
+    } catch (error: any) {
+      // Surface clear authentication errors
+      const message = error?.message ?? "";
+      if (
+        message.includes("Authentication failed") ||
+        message.includes("could not read Username") ||
+        message.includes("terminal prompts disabled") ||
+        message.includes("401")
+      ) {
+        throw new Error(
+          `Authentication failed for repository clone. The GitHub token may be expired or revoked. Original error: ${message}`,
+        );
+      }
+      throw error;
+    }
 
-    this.startPeriodicSync(projectId, cloneDir);
+    this.startPeriodicSync(userId, projectId, cloneDir);
   }
 
   /**
    * Ensure the clone is synced (pull latest). Non-fatal on failure.
    */
-  async ensureSynced(projectId: string, cloneDir: string): Promise<void> {
+  async ensureSynced(
+    userId: string,
+    projectId: string,
+    cloneDir: string,
+  ): Promise<void> {
+    const timerKey = this.timerKey(userId, projectId);
+
     try {
       await this.pullRepo(cloneDir);
     } catch (error: any) {
       // Non-fatal: log warning but continue with stale data
       console.warn(
-        `[RepoCloneService] Sync failed for project ${projectId}: ${error.message}`,
+        `[RepoCloneService] Sync failed for user ${userId}, project ${projectId}: ${error.message}`,
       );
     }
 
     // Ensure periodic sync is running
-    if (!this.syncTimers.has(projectId)) {
-      this.startPeriodicSync(projectId, cloneDir);
+    if (!this.syncTimers.has(timerKey)) {
+      this.startPeriodicSync(userId, projectId, cloneDir);
     }
   }
 
   /**
    * Remove the clone directory and stop syncing.
    */
-  async removeClone(projectId: string): Promise<void> {
-    this.stopPeriodicSync(projectId);
+  async removeClone(userId: string, projectId: string): Promise<void> {
+    const timerKey = this.timerKey(userId, projectId);
+    this.stopPeriodicSync(timerKey);
 
-    const cloneDir = this.getCloneDir(projectId);
+    const cloneDir = this.getCloneDir(userId, projectId);
     try {
       await fs.rm(cloneDir, { recursive: true, force: true });
     } catch {
@@ -99,8 +134,8 @@ export class RepoCloneService {
    * Dispose all timers. Call on process shutdown.
    */
   async disposeAll(): Promise<void> {
-    for (const [projectId] of this.syncTimers) {
-      this.stopPeriodicSync(projectId);
+    for (const [key] of this.syncTimers) {
+      this.stopPeriodicSync(key);
     }
   }
 
@@ -108,27 +143,36 @@ export class RepoCloneService {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private startPeriodicSync(projectId: string, cloneDir: string): void {
-    this.stopPeriodicSync(projectId); // clear any existing timer
+  private timerKey(userId: string, projectId: string): string {
+    return `${userId}:${projectId}`;
+  }
+
+  private startPeriodicSync(
+    userId: string,
+    projectId: string,
+    cloneDir: string,
+  ): void {
+    const key = this.timerKey(userId, projectId);
+    this.stopPeriodicSync(key); // clear any existing timer
 
     const timer = setInterval(async () => {
       try {
         await this.pullRepo(cloneDir);
       } catch (error: any) {
         console.warn(
-          `[RepoCloneService] Periodic sync failed for project ${projectId}: ${error.message}`,
+          `[RepoCloneService] Periodic sync failed for user ${userId}, project ${projectId}: ${error.message}`,
         );
       }
     }, this.SYNC_INTERVAL_MS);
 
-    this.syncTimers.set(projectId, timer);
+    this.syncTimers.set(key, timer);
   }
 
-  private stopPeriodicSync(projectId: string): void {
-    const timer = this.syncTimers.get(projectId);
+  private stopPeriodicSync(key: string): void {
+    const timer = this.syncTimers.get(key);
     if (timer) {
       clearInterval(timer);
-      this.syncTimers.delete(projectId);
+      this.syncTimers.delete(key);
     }
   }
 

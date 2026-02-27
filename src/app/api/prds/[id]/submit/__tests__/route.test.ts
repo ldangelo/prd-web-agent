@@ -65,10 +65,7 @@ describe("POST /api/prds/[id]/submit", () => {
 
   it("should start the pipeline and return steps", async () => {
     const mockSteps = [
-      { name: "confluence", status: "success", artifactLink: "CONF-123" },
-      { name: "jira", status: "success", artifactLink: "PROJ-100" },
-      { name: "git", status: "success", artifactLink: "https://github.com/pr/1" },
-      { name: "beads", status: "success", artifactLink: "BEADS-001" },
+      { name: "github", status: "success", artifactLink: "https://github.com/org/repo/pull/42" },
     ];
     mockExecute.mockResolvedValue(mockSteps);
 
@@ -79,8 +76,8 @@ describe("POST /api/prds/[id]/submit", () => {
     const body = await parseResponse(response);
 
     expect(response.status).toBe(200);
-    expect(body.data.steps).toHaveLength(4);
-    expect(body.data.steps[0].name).toBe("confluence");
+    expect(body.data.steps).toHaveLength(1);
+    expect(body.data.steps[0].name).toBe("github");
     expect(mockExecute).toHaveBeenCalledWith("prd_001", "user_001");
   });
 
@@ -121,10 +118,7 @@ describe("GET /api/prds/[id]/submit/status", () => {
 
   it("should return step statuses", async () => {
     const mockStatuses = [
-      { name: "confluence", status: "success", artifactLink: "CONF-123" },
-      { name: "jira", status: "success", artifactLink: "PROJ-100" },
-      { name: "git", status: "failed", error: "timeout" },
-      { name: "beads", status: "pending" },
+      { name: "github", status: "success", artifactLink: "https://github.com/org/repo/pull/42" },
     ];
     mockGetStepStatuses.mockResolvedValue(mockStatuses);
 
@@ -138,8 +132,8 @@ describe("GET /api/prds/[id]/submit/status", () => {
     const body = await parseResponse(response);
 
     expect(response.status).toBe(200);
-    expect(body.data.steps).toHaveLength(4);
-    expect(body.data.steps[2].status).toBe("failed");
+    expect(body.data.steps).toHaveLength(1);
+    expect(body.data.steps[0].status).toBe("success");
   });
 });
 

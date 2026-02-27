@@ -1,7 +1,7 @@
 /**
  * SubmissionModal component tests.
  *
- * Tests the modal overlay for the submission pipeline.
+ * Tests the single-step modal overlay for GitHub PR submission.
  */
 import React from "react";
 import { render, screen, waitFor, act } from "@testing-library/react";
@@ -13,25 +13,20 @@ import type { SubmissionStep } from "@/types/submission";
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
-const allPendingSteps: SubmissionStep[] = [
-  { name: "confluence", status: "pending" },
-  { name: "jira", status: "pending" },
-  { name: "git", status: "pending" },
-  { name: "beads", status: "pending" },
+const pendingStep: SubmissionStep[] = [
+  { name: "github", status: "pending" },
 ];
 
-const allSuccessSteps: SubmissionStep[] = [
-  { name: "confluence", status: "success", artifactLink: "https://example.com/c" },
-  { name: "jira", status: "success", artifactLink: "https://example.com/j" },
-  { name: "git", status: "success", artifactLink: "https://example.com/g" },
-  { name: "beads", status: "success", artifactLink: "https://example.com/b" },
+const successStep: SubmissionStep[] = [
+  {
+    name: "github",
+    status: "success",
+    artifactLink: "https://github.com/org/repo/pull/42",
+  },
 ];
 
-const allTerminalWithFailure: SubmissionStep[] = [
-  { name: "confluence", status: "success", artifactLink: "https://example.com/c" },
-  { name: "jira", status: "failed", error: "Jira error" },
-  { name: "git", status: "failed", error: "Git error" },
-  { name: "beads", status: "failed", error: "Beads error" },
+const failedStep: SubmissionStep[] = [
+  { name: "github", status: "failed", error: "GitHub API timeout" },
 ];
 
 function setupFetchMock(statusSteps: SubmissionStep[]) {
@@ -60,8 +55,7 @@ describe("SubmissionModal", () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
 
-    // Default: POST succeeds, poll returns all pending
-    setupFetchMock(allPendingSteps);
+    setupFetchMock(pendingStep);
   });
 
   afterEach(() => {
@@ -87,32 +81,31 @@ describe("SubmissionModal", () => {
     expect(screen.getByRole("button", { name: /close/i })).toBeInTheDocument();
   });
 
-  it("close button is disabled while steps are in progress", () => {
+  it("close button is disabled while step is pending", () => {
     render(<SubmissionModal {...defaultProps} />);
 
     const closeButton = screen.getByRole("button", { name: /close/i });
     expect(closeButton).toBeDisabled();
   });
 
-  it("close button is enabled when all steps are complete", async () => {
-    setupFetchMock(allSuccessSteps);
+  it("close button is enabled when step is success", async () => {
+    setupFetchMock(successStep);
 
     render(<SubmissionModal {...defaultProps} />);
 
-    // Flush the POST promise chain and the subsequent poll
     await act(async () => {
-      await Promise.resolve(); // POST .then
-      await Promise.resolve(); // pollStatus fetch
-      await Promise.resolve(); // pollStatus .json
-      await Promise.resolve(); // setSteps
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
 
     const closeButton = screen.getByRole("button", { name: /close/i });
     expect(closeButton).not.toBeDisabled();
   });
 
-  it("close button is enabled when all steps are terminal (including failed)", async () => {
-    setupFetchMock(allTerminalWithFailure);
+  it("close button is enabled when step is failed", async () => {
+    setupFetchMock(failedStep);
 
     render(<SubmissionModal {...defaultProps} />);
 
@@ -144,7 +137,7 @@ describe("SubmissionModal", () => {
     jest.useRealTimers();
     const user = userEvent.setup();
 
-    setupFetchMock(allSuccessSteps);
+    setupFetchMock(successStep);
 
     render(<SubmissionModal {...defaultProps} />);
 
@@ -158,12 +151,17 @@ describe("SubmissionModal", () => {
     expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("renders all 4 submission steps", () => {
+  it("renders the single GitHub PR step", () => {
     render(<SubmissionModal {...defaultProps} />);
 
-    expect(screen.getByText("Confluence")).toBeInTheDocument();
-    expect(screen.getByText("Jira")).toBeInTheDocument();
-    expect(screen.getByText("Git")).toBeInTheDocument();
-    expect(screen.getByText("Beads")).toBeInTheDocument();
+    expect(screen.getByText("Creating GitHub PR")).toBeInTheDocument();
+  });
+
+  it("does not render old 4-step labels", () => {
+    render(<SubmissionModal {...defaultProps} />);
+
+    expect(screen.queryByText("Confluence")).not.toBeInTheDocument();
+    expect(screen.queryByText("Jira")).not.toBeInTheDocument();
+    expect(screen.queryByText("Beads")).not.toBeInTheDocument();
   });
 });

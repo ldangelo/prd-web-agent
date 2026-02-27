@@ -137,12 +137,6 @@ jest.mock("@/services/audit-service", () => ({
   })),
 }));
 
-const mockResolveIntegrationConfig = jest.fn();
-jest.mock("@/services/integration-config-service", () => ({
-  resolveIntegrationConfig: (...args: unknown[]) =>
-    mockResolveIntegrationConfig(...args),
-}));
-
 // ---------------------------------------------------------------------------
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
@@ -212,10 +206,9 @@ const MOCK_PROJECT = {
   id: "proj_001",
   name: "E2E Test Project",
   description: "Integration test project",
-  confluenceSpace: "SPACE",
-  jiraProject: "PROJ",
-  gitRepo: "org/repo",
-  beadsProject: "beads-proj",
+  githubRepo: "org/repo",
+  defaultLabels: ["prd"],
+  defaultReviewers: ["reviewer1"],
   createdAt: new Date("2026-02-26T00:00:00.000Z"),
   updatedAt: new Date("2026-02-26T00:00:00.000Z"),
 };
@@ -227,10 +220,9 @@ const MOCK_PRD = {
   authorId: "user_author",
   status: "DRAFT",
   currentVersion: 1,
-  confluencePageId: null,
-  jiraEpicKey: null,
-  gitPrUrl: null,
-  beadsIssueId: null,
+  githubPrUrl: null,
+  githubPrNumber: null,
+  githubBranch: null,
   createdAt: new Date("2026-02-26T00:00:00.000Z"),
   updatedAt: new Date("2026-02-26T00:00:00.000Z"),
 };
@@ -306,13 +298,13 @@ describe("E2E: Full PRD Lifecycle", () => {
     // -----------------------------------------------------------------
     // Step 1: Create a project (admin)
     // -----------------------------------------------------------------
-    mockRequireAdmin.mockResolvedValue(ADMIN_SESSION);
+    mockRequireAuth.mockResolvedValue(ADMIN_SESSION);
     mockProjectCreate.mockResolvedValue(MOCK_PROJECT);
 
     const projectReq = makeRequest(
       "http://localhost/api/projects",
       "POST",
-      { name: "E2E Test Project", description: "Integration test project" },
+      { name: "E2E Test Project", description: "Integration test project", githubRepo: "org/repo" },
     );
     const projectRes = await createProject(projectReq as any);
     const projectBody = await projectRes.json();
@@ -474,10 +466,7 @@ describe("E2E: Full PRD Lifecycle", () => {
     // -----------------------------------------------------------------
     mockRequireAuth.mockResolvedValue(AUTHOR_SESSION);
     mockSubmissionExecute.mockResolvedValue([
-      { name: "confluence", status: "success", artifactLink: "CONF-12345" },
-      { name: "jira", status: "success", artifactLink: "PROJ-100" },
-      { name: "git", status: "success", artifactLink: "https://github.com/org/repo/pull/42" },
-      { name: "beads", status: "success", artifactLink: "BEADS-001" },
+      { name: "github", status: "success", artifactLink: "https://github.com/org/repo/pull/42" },
     ]);
 
     const submitReq = makeRequest(
@@ -492,26 +481,11 @@ describe("E2E: Full PRD Lifecycle", () => {
 
     expect(submitRes.status).toBe(200);
     expect(submitBody.data).toHaveProperty("prdId", "prd_001");
-    expect(submitBody.data.steps).toHaveLength(4);
+    expect(submitBody.data.steps).toHaveLength(1);
     expect(submitBody.data.steps[0]).toMatchObject({
-      name: "confluence",
-      status: "success",
-      artifactLink: "CONF-12345",
-    });
-    expect(submitBody.data.steps[1]).toMatchObject({
-      name: "jira",
-      status: "success",
-      artifactLink: "PROJ-100",
-    });
-    expect(submitBody.data.steps[2]).toMatchObject({
-      name: "git",
+      name: "github",
       status: "success",
       artifactLink: "https://github.com/org/repo/pull/42",
-    });
-    expect(submitBody.data.steps[3]).toMatchObject({
-      name: "beads",
-      status: "success",
-      artifactLink: "BEADS-001",
     });
 
     // Verify the pipeline was called with correct args
@@ -601,22 +575,22 @@ describe("E2E: Auth Flow", () => {
     expect(body).toHaveProperty("error");
   });
 
-  it("should return 403 when non-admin tries to create a project", async () => {
-    mockRequireAdmin.mockRejectedValue(
-      new ForbiddenError("Insufficient permissions"),
+  it("should return 401 when unauthenticated user tries to create a project", async () => {
+    mockRequireAuth.mockRejectedValue(
+      new UnauthorizedError("Authentication required"),
     );
 
     const req = makeRequest(
       "http://localhost/api/projects",
       "POST",
-      { name: "Unauthorized Project" },
+      { name: "Unauthorized Project", githubRepo: "org/repo" },
     );
     const res = await createProject(req as any);
     const body = await res.json();
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
     expect(body).toHaveProperty("error");
-    expect(body.error).toContain("Insufficient permissions");
+    expect(body.error).toContain("Authentication required");
   });
 
   it("should return 403 when user is not a project member and tries to create PRD", async () => {

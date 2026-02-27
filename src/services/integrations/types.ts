@@ -1,52 +1,24 @@
 /**
  * Shared types for external integration services.
  *
- * Provides configuration interfaces used across Confluence, Jira,
- * Git, and Beads integration services.
+ * Provides configuration interfaces used across GitHub integration.
  */
 
 export interface IntegrationConfig {
-  confluenceUrl?: string;
-  confluenceEmail?: string;
-  confluenceSpace?: string;
-  confluenceToken?: string;
-  jiraUrl?: string;
-  jiraEmail?: string;
-  jiraProject?: string;
-  jiraToken?: string;
-  gitRepo?: string;
-  gitToken?: string;
-  beadsProject?: string;
+  githubRepo?: string;
 }
 
-export interface ConfluencePageResult {
-  pageId: string;
-  url: string;
-  title: string;
-  version: number;
-}
-
-export interface JiraEpicResult {
-  epicKey: string;
-  url: string;
-  title: string;
-}
-
-export interface GitPrResult {
+export interface GitHubPrResult {
   prUrl: string;
   prNumber: number;
   branch: string;
-}
-
-export interface BeadsIssueResult {
-  issueId: string;
 }
 
 /**
  * Result of a single submission pipeline step.
  */
 export interface SubmissionStep {
-  name: "confluence" | "jira" | "git" | "beads";
+  name: string;
   status: "pending" | "in_progress" | "success" | "failed";
   error?: string;
   artifactLink?: string;

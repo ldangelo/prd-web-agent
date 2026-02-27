@@ -27,10 +27,9 @@ export default function EditProjectPage() {
         setInitialData({
           name: p.name ?? "",
           description: p.description ?? "",
-          confluenceSpace: p.confluenceSpace ?? "",
-          jiraProject: p.jiraProject ?? "",
-          gitRepo: p.gitRepo ?? "",
-          beadsProject: p.beadsProject ?? "",
+          githubRepo: p.githubRepo ?? "",
+          defaultLabels: p.defaultLabels ?? [],
+          defaultReviewers: p.defaultReviewers ?? [],
         });
       } catch (err) {
         setError(

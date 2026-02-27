@@ -58,10 +58,9 @@ const MOCK_PROJECT = {
   id: "proj_001",
   name: "Test Project",
   description: "A test project",
-  confluenceSpace: null,
-  jiraProject: null,
-  gitRepo: null,
-  beadsProject: null,
+  githubRepo: "org/test-repo",
+  defaultLabels: [],
+  defaultReviewers: [],
   members: [
     { userId: "user_1", isReviewer: false, user: { id: "user_1", name: "Test User" } },
   ],

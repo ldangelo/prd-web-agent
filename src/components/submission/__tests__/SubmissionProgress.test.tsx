@@ -1,7 +1,7 @@
 /**
  * SubmissionProgress component tests.
  *
- * Tests the 4-step progress stepper for the submission pipeline.
+ * Tests the single-step progress display for GitHub PR creation.
  */
 import React from "react";
 import { render, screen } from "@testing-library/react";
@@ -10,121 +10,168 @@ import { SubmissionProgress } from "../SubmissionProgress";
 import type { SubmissionStep } from "@/types/submission";
 
 describe("SubmissionProgress", () => {
-  const allPendingSteps: SubmissionStep[] = [
-    { name: "confluence", status: "pending" },
-    { name: "jira", status: "pending" },
-    { name: "git", status: "pending" },
-    { name: "beads", status: "pending" },
-  ];
-
-  const mixedSteps: SubmissionStep[] = [
-    {
-      name: "confluence",
-      status: "success",
-      artifactLink: "https://confluence.example.com/page/123",
-    },
-    { name: "jira", status: "in_progress" },
-    { name: "git", status: "pending" },
-    { name: "beads", status: "failed", error: "Beads upload timed out" },
-  ];
-
   const defaultOnRetry = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("renders all 4 steps", () => {
+  it("renders the GitHub PR step label", () => {
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "pending" },
+    ];
+
     render(
-      <SubmissionProgress steps={allPendingSteps} onRetry={defaultOnRetry} />,
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
     );
 
-    expect(screen.getByText("Confluence")).toBeInTheDocument();
-    expect(screen.getByText("Jira")).toBeInTheDocument();
-    expect(screen.getByText("Git")).toBeInTheDocument();
-    expect(screen.getByText("Beads")).toBeInTheDocument();
+    expect(screen.getByText("Creating GitHub PR")).toBeInTheDocument();
   });
 
-  it("shows pending icon for pending steps", () => {
+  it("shows pending icon for pending step", () => {
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "pending" },
+    ];
+
     render(
-      <SubmissionProgress steps={allPendingSteps} onRetry={defaultOnRetry} />,
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
     );
 
-    const pendingIcons = screen.getAllByTestId("status-pending");
-    expect(pendingIcons).toHaveLength(4);
+    expect(screen.getByTestId("status-pending")).toBeInTheDocument();
   });
 
-  it("shows correct status icons for each step status", () => {
+  it("shows in_progress icon for in_progress step", () => {
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "in_progress" },
+    ];
+
     render(
-      <SubmissionProgress steps={mixedSteps} onRetry={defaultOnRetry} />,
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
+    );
+
+    expect(screen.getByTestId("status-in_progress")).toBeInTheDocument();
+  });
+
+  it("shows success icon for success step", () => {
+    const steps: SubmissionStep[] = [
+      {
+        name: "github",
+        status: "success",
+        artifactLink: "https://github.com/org/repo/pull/42",
+      },
+    ];
+
+    render(
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
     );
 
     expect(screen.getByTestId("status-success")).toBeInTheDocument();
-    expect(screen.getByTestId("status-in_progress")).toBeInTheDocument();
-    expect(screen.getByTestId("status-pending")).toBeInTheDocument();
+  });
+
+  it("shows failed icon for failed step", () => {
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "failed", error: "API error" },
+    ];
+
+    render(
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
+    );
+
     expect(screen.getByTestId("status-failed")).toBeInTheDocument();
   });
 
-  it("shows retry button only for failed steps", () => {
+  it("shows clickable PR link on success", () => {
+    const steps: SubmissionStep[] = [
+      {
+        name: "github",
+        status: "success",
+        artifactLink: "https://github.com/org/repo/pull/42",
+      },
+    ];
+
     render(
-      <SubmissionProgress steps={mixedSteps} onRetry={defaultOnRetry} />,
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
     );
 
-    const retryButtons = screen.getAllByRole("button", { name: /retry/i });
-    expect(retryButtons).toHaveLength(1);
-  });
-
-  it("calls onRetry with the step name when retry is clicked", async () => {
-    const user = userEvent.setup();
-    render(
-      <SubmissionProgress steps={mixedSteps} onRetry={defaultOnRetry} />,
-    );
-
-    const retryButton = screen.getByRole("button", { name: /retry/i });
-    await user.click(retryButton);
-
-    expect(defaultOnRetry).toHaveBeenCalledTimes(1);
-    expect(defaultOnRetry).toHaveBeenCalledWith("beads");
-  });
-
-  it("shows artifact links for successful steps", () => {
-    render(
-      <SubmissionProgress steps={mixedSteps} onRetry={defaultOnRetry} />,
-    );
-
-    const link = screen.getByRole("link", { name: /view artifact/i });
+    const link = screen.getByRole("link", { name: /view pull request/i });
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute(
-      "href",
-      "https://confluence.example.com/page/123",
-    );
+    expect(link).toHaveAttribute("href", "https://github.com/org/repo/pull/42");
     expect(link).toHaveAttribute("target", "_blank");
   });
 
-  it("does not show artifact links for non-successful steps", () => {
+  it("does not show PR link when step is not success", () => {
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "pending" },
+    ];
+
     render(
-      <SubmissionProgress steps={allPendingSteps} onRetry={defaultOnRetry} />,
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
     );
 
-    const links = screen.queryAllByRole("link", { name: /view artifact/i });
-    expect(links).toHaveLength(0);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
-  it("shows error message for failed steps", () => {
+  it("shows error message for failed step", () => {
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "failed", error: "GitHub API timeout" },
+    ];
+
     render(
-      <SubmissionProgress steps={mixedSteps} onRetry={defaultOnRetry} />,
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
     );
 
-    expect(screen.getByText("Beads upload timed out")).toBeInTheDocument();
+    expect(screen.getByText("GitHub API timeout")).toBeInTheDocument();
   });
 
-  it("renders connecting lines between steps", () => {
+  it("shows retry button for failed step", () => {
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "failed", error: "API error" },
+    ];
+
     render(
-      <SubmissionProgress steps={allPendingSteps} onRetry={defaultOnRetry} />,
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
     );
 
-    // 3 connectors between 4 steps
-    const connectors = screen.getAllByTestId("step-connector");
-    expect(connectors).toHaveLength(3);
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it("calls onRetry with step name when retry is clicked", async () => {
+    const user = userEvent.setup();
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "failed", error: "API error" },
+    ];
+
+    render(
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /retry/i }));
+
+    expect(defaultOnRetry).toHaveBeenCalledTimes(1);
+    expect(defaultOnRetry).toHaveBeenCalledWith("github");
+  });
+
+  it("does not show retry button when step is not failed", () => {
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "in_progress" },
+    ];
+
+    render(
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
+    );
+
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it("does not render connector lines (single step, no connectors)", () => {
+    const steps: SubmissionStep[] = [
+      { name: "github", status: "pending" },
+    ];
+
+    render(
+      <SubmissionProgress steps={steps} onRetry={defaultOnRetry} />,
+    );
+
+    expect(screen.queryByTestId("step-connector")).not.toBeInTheDocument();
   });
 });

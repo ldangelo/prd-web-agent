@@ -55,6 +55,9 @@ const MOCK_PROJECTS = [
     id: "proj_001",
     name: "Project A",
     description: "First project",
+    githubRepo: "org/repo-a",
+    defaultLabels: ["bug"],
+    defaultReviewers: ["user1"],
     members: [{ userId: "user_1" }],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -140,6 +143,9 @@ describe("POST /api/projects", () => {
       id: "proj_new",
       name: "New Project",
       description: null,
+      githubRepo: "org/new-repo",
+      defaultLabels: [],
+      defaultReviewers: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -147,7 +153,7 @@ describe("POST /api/projects", () => {
 
   it("should create a project and return 201 for authenticated user", async () => {
     const response = await POST(
-      postRequest({ name: "New Project" }) as any,
+      postRequest({ name: "New Project", githubRepo: "org/new-repo" }) as any,
     );
     const body = await response.json();
 
@@ -162,10 +168,9 @@ describe("POST /api/projects", () => {
       postRequest({
         name: "Full Project",
         description: "A description",
-        confluenceSpace: "SPACE",
-        jiraProject: "JIRA",
-        gitRepo: "repo",
-        beadsProject: "beads",
+        githubRepo: "org/full-repo",
+        defaultLabels: ["bug", "enhancement"],
+        defaultReviewers: ["reviewer1", "reviewer2"],
       }) as any,
     );
 
@@ -173,10 +178,9 @@ describe("POST /api/projects", () => {
       data: {
         name: "Full Project",
         description: "A description",
-        confluenceSpace: "SPACE",
-        jiraProject: "JIRA",
-        gitRepo: "repo",
-        beadsProject: "beads",
+        githubRepo: "org/full-repo",
+        defaultLabels: ["bug", "enhancement"],
+        defaultReviewers: ["reviewer1", "reviewer2"],
       },
     });
   });
@@ -187,7 +191,7 @@ describe("POST /api/projects", () => {
     );
 
     const response = await POST(
-      postRequest({ name: "New Project" }) as any,
+      postRequest({ name: "New Project", githubRepo: "org/repo" }) as any,
     );
     const body = await response.json();
 
@@ -197,7 +201,7 @@ describe("POST /api/projects", () => {
 
   it("should return 422 when name is missing", async () => {
     const response = await POST(
-      postRequest({ description: "No name" }) as any,
+      postRequest({ description: "No name", githubRepo: "org/repo" }) as any,
     );
     const body = await response.json();
 
@@ -206,8 +210,18 @@ describe("POST /api/projects", () => {
   });
 
   it("should return 422 when name is empty", async () => {
-    const response = await POST(postRequest({ name: "" }) as any);
+    const response = await POST(postRequest({ name: "", githubRepo: "org/repo" }) as any);
 
     expect(response.status).toBe(422);
+  });
+
+  it("should return 422 when githubRepo is missing", async () => {
+    const response = await POST(
+      postRequest({ name: "Project Without Repo" }) as any,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body).toHaveProperty("error");
   });
 });

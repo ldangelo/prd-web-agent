@@ -1,7 +1,7 @@
 /**
  * Admin Settings API route tests.
  *
- * Tests for GET /api/admin/settings (returns settings with tokens redacted)
+ * Tests for GET /api/admin/settings (returns settings)
  * and PUT /api/admin/settings (admin-only update).
  */
 
@@ -41,13 +41,6 @@ import { GET, PUT } from "../route";
 
 const MOCK_SETTINGS = {
   id: "global",
-  confluenceSpace: "SPACE",
-  jiraProject: "PROJ",
-  gitRepo: "org/repo",
-  beadsProject: "beads-proj",
-  confluenceToken: "secret-token-1",
-  jiraToken: "secret-token-2",
-  gitToken: "secret-token-3",
   llmProvider: "anthropic",
   llmModel: "claude-sonnet-4-20250514",
   llmThinkingLevel: "medium",
@@ -87,7 +80,7 @@ describe("GET /api/admin/settings", () => {
     });
   });
 
-  it("should return settings with tokens redacted", async () => {
+  it("should return settings", async () => {
     mockGlobalSettingsFindUnique.mockResolvedValue(MOCK_SETTINGS);
 
     const request = createRequest("GET");
@@ -95,10 +88,9 @@ describe("GET /api/admin/settings", () => {
     const body = await parseResponse(response);
 
     expect(response.status).toBe(200);
-    expect(body.data.confluenceSpace).toBe("SPACE");
-    expect(body.data.confluenceToken).toBe("••••••••");
-    expect(body.data.jiraToken).toBe("••••••••");
-    expect(body.data.gitToken).toBe("••••••••");
+    expect(body.data.llmProvider).toBe("anthropic");
+    expect(body.data.llmModel).toBe("claude-sonnet-4-20250514");
+    expect(body.data.blockApprovalOnUnresolvedComments).toBe(true);
   });
 
   it("should return empty object when no settings exist", async () => {
@@ -134,10 +126,10 @@ describe("PUT /api/admin/settings", () => {
   it("should update settings (admin only)", async () => {
     mockGlobalSettingsUpsert.mockResolvedValue({
       ...MOCK_SETTINGS,
-      confluenceSpace: "NEW_SPACE",
+      llmProvider: "openai",
     });
 
-    const request = createRequest("PUT", { confluenceSpace: "NEW_SPACE" });
+    const request = createRequest("PUT", { llmProvider: "openai" });
     const response = await PUT(request);
     const body = await parseResponse(response);
 
@@ -145,37 +137,39 @@ describe("PUT /api/admin/settings", () => {
     expect(mockGlobalSettingsUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "global" },
-        update: expect.objectContaining({ confluenceSpace: "NEW_SPACE" }),
+        update: expect.objectContaining({ llmProvider: "openai" }),
       }),
     );
-    // Tokens in response should be redacted
-    expect(body.data.confluenceToken).toBe("••••••••");
+    expect(body.data.llmProvider).toBe("openai");
   });
 
   it("should return 403 when not admin", async () => {
     const { ForbiddenError } = jest.requireActual("@/lib/api/errors") as any;
     mockRequireAdmin.mockRejectedValue(new ForbiddenError("Insufficient permissions"));
 
-    const request = createRequest("PUT", { confluenceSpace: "NEW_SPACE" });
+    const request = createRequest("PUT", { llmProvider: "openai" });
     const response = await PUT(request);
 
     expect(response.status).toBe(403);
   });
 
-  it("should allow updating tokens", async () => {
-    mockGlobalSettingsUpsert.mockResolvedValue({
-      ...MOCK_SETTINGS,
-      confluenceToken: "new-secret-token",
-    });
+  it("should only accept allowed fields", async () => {
+    mockGlobalSettingsUpsert.mockResolvedValue(MOCK_SETTINGS);
 
     const request = createRequest("PUT", {
-      confluenceToken: "new-secret-token",
+      llmProvider: "openai",
+      blockApprovalOnUnresolvedComments: false,
     });
     const response = await PUT(request);
-    const body = await parseResponse(response);
 
     expect(response.status).toBe(200);
-    // Even new tokens are redacted in response
-    expect(body.data.confluenceToken).toBe("••••••••");
+    expect(mockGlobalSettingsUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: {
+          llmProvider: "openai",
+          blockApprovalOnUnresolvedComments: false,
+        },
+      }),
+    );
   });
 });

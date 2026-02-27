@@ -173,21 +173,21 @@ describe("TASK-047: Trace instrumentation helpers", () => {
   describe("withExternalCallSpan", () => {
     it("should create a span with external call attributes", async () => {
       const result = await withExternalCallSpan(
-        "jira",
-        "https://jira.example.com/api/issue",
-        async () => ({ key: "PRD-1" }),
+        "github",
+        "https://api.github.com/repos/org/repo/pulls",
+        async () => ({ number: 42 }),
       );
 
-      expect(result).toEqual({ key: "PRD-1" });
+      expect(result).toEqual({ number: 42 });
       expect(mockStartActiveSpan).toHaveBeenCalledWith(
-        "external.jira",
+        "external.github",
         expect.any(Object),
         expect.any(Function),
       );
-      expect(mockSetAttribute).toHaveBeenCalledWith("peer.service", "jira");
+      expect(mockSetAttribute).toHaveBeenCalledWith("peer.service", "github");
       expect(mockSetAttribute).toHaveBeenCalledWith(
         "http.url",
-        "https://jira.example.com/api/issue",
+        "https://api.github.com/repos/org/repo/pulls",
       );
     });
   });

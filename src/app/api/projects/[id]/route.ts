@@ -20,10 +20,9 @@ import { validateBody } from "@/lib/api/validate";
 const UpdateProjectSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
-  confluenceSpace: z.string().optional(),
-  jiraProject: z.string().optional(),
-  gitRepo: z.string().optional(),
-  beadsProject: z.string().optional(),
+  githubRepo: z.string().min(1).optional(),
+  defaultLabels: z.array(z.string()).optional(),
+  defaultReviewers: z.array(z.string()).optional(),
 });
 
 // ---------------------------------------------------------------------------

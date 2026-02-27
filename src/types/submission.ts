@@ -1,8 +1,10 @@
 /**
  * Types for the PRD submission pipeline.
+ *
+ * Single-step GitHub PR creation model.
  */
 
-export type SubmissionStepName = "confluence" | "jira" | "git" | "beads";
+export type SubmissionStepName = "github";
 
 export type SubmissionStepStatus =
   | "pending"

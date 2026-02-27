@@ -1,3 +1,11 @@
+/**
+ * RepoCloneService tests (updated for TASK-068)
+ *
+ * Per-user clones: /efs/repos/<user-id>/<project-id>/
+ * Uses user's GitHub OAuth token passed as parameter
+ * Token injected into clone URL for HTTPS clones
+ * Surfaces 401 errors clearly for token refresh handling
+ */
 import { RepoCloneService } from "../../repo-clone-service";
 import { exec } from "child_process";
 
@@ -48,72 +56,227 @@ describe("RepoCloneService", () => {
     jest.useRealTimers();
   });
 
-  it("returns correct clone directory", () => {
-    const dir = service.getCloneDir("project-abc");
-    expect(dir).toBe("/test/efs/repos/project-abc");
+  // -------------------------------------------------------------------------
+  // TASK-068: Per-user clone directories
+  // -------------------------------------------------------------------------
+
+  describe("getCloneDir", () => {
+    it("returns per-user clone directory with userId and projectId", () => {
+      const dir = service.getCloneDir("user-abc", "project-xyz");
+      expect(dir).toBe("/test/efs/repos/user-abc/project-xyz");
+    });
+
+    it("uses both userId and projectId in the path", () => {
+      const dir1 = service.getCloneDir("user-1", "project-a");
+      const dir2 = service.getCloneDir("user-2", "project-a");
+
+      expect(dir1).not.toBe(dir2);
+      expect(dir1).toBe("/test/efs/repos/user-1/project-a");
+      expect(dir2).toBe("/test/efs/repos/user-2/project-a");
+    });
   });
 
-  it("clones a repo to the correct directory", async () => {
-    fsPromises.access.mockRejectedValue(new Error("ENOENT"));
-    fsPromises.mkdir.mockResolvedValue(undefined);
-    mockExecSuccess();
+  // -------------------------------------------------------------------------
+  // TASK-068: Clone with user OAuth token
+  // -------------------------------------------------------------------------
 
-    await service.cloneRepo("project-1", "https://github.com/org/repo.git", "token-123");
+  describe("cloneRepo", () => {
+    it("clones a repo to the per-user directory", async () => {
+      fsPromises.access.mockRejectedValue(new Error("ENOENT"));
+      fsPromises.mkdir.mockResolvedValue(undefined);
+      mockExecSuccess();
 
-    expect(mockedExec).toHaveBeenCalledWith(
-      expect.stringContaining("git clone"),
-      expect.any(Object),
-      expect.any(Function),
-    );
+      await service.cloneRepo(
+        "user-1",
+        "project-1",
+        "https://github.com/org/repo.git",
+        "gho_usertoken123",
+      );
+
+      expect(mockedExec).toHaveBeenCalledWith(
+        expect.stringContaining("git clone"),
+        expect.any(Object),
+        expect.any(Function),
+      );
+
+      // Verify the clone directory includes userId
+      const cloneCmd = (mockedExec.mock.calls[0] as any[])[0] as string;
+      expect(cloneCmd).toContain("/test/efs/repos/user-1/project-1");
+    });
+
+    it("injects OAuth token into clone URL", async () => {
+      fsPromises.access.mockRejectedValue(new Error("ENOENT"));
+      fsPromises.mkdir.mockResolvedValue(undefined);
+      mockExecSuccess();
+
+      await service.cloneRepo(
+        "user-1",
+        "project-1",
+        "https://github.com/org/repo.git",
+        "gho_mytoken",
+      );
+
+      const cloneCmd = (mockedExec.mock.calls[0] as any[])[0] as string;
+      expect(cloneCmd).toContain(
+        "https://x-access-token:gho_mytoken@github.com/org/repo.git",
+      );
+    });
+
+    it("pulls instead of cloning if directory already exists", async () => {
+      fsPromises.access.mockResolvedValue(undefined);
+      mockExecSuccess();
+
+      await service.cloneRepo(
+        "user-1",
+        "project-1",
+        "https://github.com/org/repo.git",
+        "gho_token",
+      );
+
+      const cmd = (mockedExec.mock.calls[0] as any[])[0] as string;
+      expect(cmd).toContain("git pull");
+    });
+
+    it("creates nested directory with recursive mkdir", async () => {
+      fsPromises.access.mockRejectedValue(new Error("ENOENT"));
+      fsPromises.mkdir.mockResolvedValue(undefined);
+      mockExecSuccess();
+
+      await service.cloneRepo(
+        "user-1",
+        "project-1",
+        "https://github.com/org/repo.git",
+        "gho_token",
+      );
+
+      expect(fsPromises.mkdir).toHaveBeenCalledWith(
+        "/test/efs/repos/user-1/project-1",
+        { recursive: true },
+      );
+    });
   });
 
-  it("starts periodic sync timer", async () => {
-    fsPromises.access.mockResolvedValue(undefined);
-    mockExecSuccess();
+  // -------------------------------------------------------------------------
+  // TASK-068: 401 error handling for token issues
+  // -------------------------------------------------------------------------
 
-    await service.ensureSynced("project-1", "/test/efs/repos/project-1");
+  describe("clone/pull 401 error handling", () => {
+    it("throws a clear error when clone fails with 401/authentication", async () => {
+      fsPromises.access.mockRejectedValue(new Error("ENOENT"));
+      fsPromises.mkdir.mockResolvedValue(undefined);
+      mockExecFailure("Authentication failed for 'https://github.com/org/repo.git'");
 
-    // Advance past one sync interval
-    jest.advanceTimersByTime(15 * 60 * 1000);
+      await expect(
+        service.cloneRepo(
+          "user-1",
+          "project-1",
+          "https://github.com/org/repo.git",
+          "gho_expired",
+        ),
+      ).rejects.toThrow(/authentication failed/i);
+    });
 
-    // exec should have been called for the initial sync and then the periodic one
-    expect(mockedExec).toHaveBeenCalledTimes(2);
+    it("throws a clear error when clone fails with 'could not read Username'", async () => {
+      fsPromises.access.mockRejectedValue(new Error("ENOENT"));
+      fsPromises.mkdir.mockResolvedValue(undefined);
+      mockExecFailure("fatal: could not read Username for 'https://github.com': terminal prompts disabled");
+
+      await expect(
+        service.cloneRepo(
+          "user-1",
+          "project-1",
+          "https://github.com/org/repo.git",
+          "gho_bad",
+        ),
+      ).rejects.toThrow(/authentication|token/i);
+    });
   });
 
-  it("cleans up timer on removeClone", async () => {
-    fsPromises.access.mockResolvedValue(undefined);
-    fsPromises.rm.mockResolvedValue(undefined);
-    mockExecSuccess();
+  // -------------------------------------------------------------------------
+  // Existing functionality (updated signatures)
+  // -------------------------------------------------------------------------
 
-    await service.ensureSynced("project-1", "/test/efs/repos/project-1");
-    await service.removeClone("project-1");
+  describe("ensureSynced", () => {
+    it("starts periodic sync timer", async () => {
+      fsPromises.access.mockResolvedValue(undefined);
+      mockExecSuccess();
 
-    // Advance past sync interval - should NOT trigger another exec
-    const callCountAfterRemove = mockedExec.mock.calls.length;
-    jest.advanceTimersByTime(15 * 60 * 1000);
-    expect(mockedExec).toHaveBeenCalledTimes(callCountAfterRemove);
+      await service.ensureSynced(
+        "user-1",
+        "project-1",
+        "/test/efs/repos/user-1/project-1",
+      );
+
+      jest.advanceTimersByTime(15 * 60 * 1000);
+
+      // exec should have been called for the initial sync and then the periodic one
+      expect(mockedExec).toHaveBeenCalledTimes(2);
+    });
+
+    it("handles sync failure gracefully (non-fatal)", async () => {
+      fsPromises.access.mockResolvedValue(undefined);
+      mockExecFailure("network error");
+
+      await expect(
+        service.ensureSynced(
+          "user-1",
+          "project-1",
+          "/test/efs/repos/user-1/project-1",
+        ),
+      ).resolves.not.toThrow();
+    });
   });
 
-  it("disposeAll clears all timers", async () => {
-    fsPromises.access.mockResolvedValue(undefined);
-    mockExecSuccess();
+  describe("removeClone", () => {
+    it("cleans up timer and removes per-user clone directory", async () => {
+      fsPromises.access.mockResolvedValue(undefined);
+      fsPromises.rm.mockResolvedValue(undefined);
+      mockExecSuccess();
 
-    await service.ensureSynced("project-1", "/test/efs/repos/project-1");
-    await service.ensureSynced("project-2", "/test/efs/repos/project-2");
-    await service.disposeAll();
+      await service.ensureSynced(
+        "user-1",
+        "project-1",
+        "/test/efs/repos/user-1/project-1",
+      );
+      await service.removeClone("user-1", "project-1");
 
-    const callCountAfterDispose = mockedExec.mock.calls.length;
-    jest.advanceTimersByTime(15 * 60 * 1000);
-    expect(mockedExec).toHaveBeenCalledTimes(callCountAfterDispose);
+      const callCountAfterRemove = mockedExec.mock.calls.length;
+      jest.advanceTimersByTime(15 * 60 * 1000);
+      expect(mockedExec).toHaveBeenCalledTimes(callCountAfterRemove);
+    });
+
+    it("removes the correct per-user directory", async () => {
+      fsPromises.rm.mockResolvedValue(undefined);
+
+      await service.removeClone("user-1", "project-1");
+
+      expect(fsPromises.rm).toHaveBeenCalledWith(
+        "/test/efs/repos/user-1/project-1",
+        { recursive: true, force: true },
+      );
+    });
   });
 
-  it("handles sync failure gracefully (non-fatal)", async () => {
-    fsPromises.access.mockResolvedValue(undefined);
-    mockExecFailure("network error");
+  describe("disposeAll", () => {
+    it("clears all timers", async () => {
+      fsPromises.access.mockResolvedValue(undefined);
+      mockExecSuccess();
 
-    // Should not throw
-    await expect(
-      service.ensureSynced("project-1", "/test/efs/repos/project-1"),
-    ).resolves.not.toThrow();
+      await service.ensureSynced(
+        "user-1",
+        "project-1",
+        "/test/efs/repos/user-1/project-1",
+      );
+      await service.ensureSynced(
+        "user-2",
+        "project-2",
+        "/test/efs/repos/user-2/project-2",
+      );
+      await service.disposeAll();
+
+      const callCountAfterDispose = mockedExec.mock.calls.length;
+      jest.advanceTimersByTime(15 * 60 * 1000);
+      expect(mockedExec).toHaveBeenCalledTimes(callCountAfterDispose);
+    });
   });
 });

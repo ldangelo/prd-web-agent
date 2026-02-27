@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { RepoPicker } from "./RepoPicker";
+import type { RepoSelection } from "./RepoPicker";
 
 export interface ProjectFormData {
   name: string;
   description: string;
-  confluenceSpace: string;
-  jiraProject: string;
-  gitRepo: string;
-  beadsProject: string;
+  githubRepo: string;
+  defaultLabels: string[];
+  defaultReviewers: string[];
 }
 
 export interface ProjectFormProps {
@@ -20,10 +21,9 @@ export interface ProjectFormProps {
 const emptyForm: ProjectFormData = {
   name: "",
   description: "",
-  confluenceSpace: "",
-  jiraProject: "",
-  gitRepo: "",
-  beadsProject: "",
+  githubRepo: "",
+  defaultLabels: [],
+  defaultReviewers: [],
 };
 
 export function ProjectForm({ initialData, onSubmit, isLoading }: ProjectFormProps) {
@@ -32,10 +32,50 @@ export function ProjectForm({ initialData, onSubmit, isLoading }: ProjectFormPro
     ...initialData,
   });
 
+  const [labelsInput, setLabelsInput] = useState(
+    (initialData?.defaultLabels ?? []).join(", "),
+  );
+  const [reviewersInput, setReviewersInput] = useState(
+    (initialData?.defaultReviewers ?? []).join(", "),
+  );
+
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
       setFormData((prev) => ({ ...prev, [name]: value }));
+    },
+    [],
+  );
+
+  const handleRepoChange = useCallback((repo: RepoSelection | null) => {
+    setFormData((prev) => ({
+      ...prev,
+      githubRepo: repo ? repo.fullName : "",
+    }));
+  }, []);
+
+  const handleLabelsChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value;
+      setLabelsInput(raw);
+      const labels = raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      setFormData((prev) => ({ ...prev, defaultLabels: labels }));
+    },
+    [],
+  );
+
+  const handleReviewersChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value;
+      setReviewersInput(raw);
+      const reviewers = raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      setFormData((prev) => ({ ...prev, defaultReviewers: reviewers }));
     },
     [],
   );
@@ -87,76 +127,66 @@ export function ProjectForm({ initialData, onSubmit, isLoading }: ProjectFormPro
 
       <fieldset className="rounded-md border border-gray-200 p-4">
         <legend className="px-2 text-sm font-medium text-gray-700">
-          Integration Settings
+          GitHub Settings
         </legend>
 
         <div className="space-y-4">
           <div>
             <label
-              htmlFor="project-confluenceSpace"
+              htmlFor="project-githubRepo"
               className="block text-sm font-medium text-gray-700"
             >
-              Confluence Space
+              GitHub Repository
             </label>
-            <input
-              id="project-confluenceSpace"
-              name="confluenceSpace"
-              type="text"
-              value={formData.confluenceSpace}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+            <div className="mt-1">
+              <RepoPicker
+                value={formData.githubRepo || undefined}
+                onChange={handleRepoChange}
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
           <div>
             <label
-              htmlFor="project-jiraProject"
+              htmlFor="project-defaultLabels"
               className="block text-sm font-medium text-gray-700"
             >
-              Jira Project
+              Default Labels
             </label>
             <input
-              id="project-jiraProject"
-              name="jiraProject"
+              id="project-defaultLabels"
+              name="defaultLabels"
               type="text"
-              value={formData.jiraProject}
-              onChange={handleChange}
+              placeholder="bug, enhancement, prd"
+              value={labelsInput}
+              onChange={handleLabelsChange}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Comma-separated list of labels
+            </p>
           </div>
 
           <div>
             <label
-              htmlFor="project-gitRepo"
+              htmlFor="project-defaultReviewers"
               className="block text-sm font-medium text-gray-700"
             >
-              Git Repo
+              Default Reviewers
             </label>
             <input
-              id="project-gitRepo"
-              name="gitRepo"
+              id="project-defaultReviewers"
+              name="defaultReviewers"
               type="text"
-              value={formData.gitRepo}
-              onChange={handleChange}
+              placeholder="user1, user2"
+              value={reviewersInput}
+              onChange={handleReviewersChange}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="project-beadsProject"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Beads Project
-            </label>
-            <input
-              id="project-beadsProject"
-              name="beadsProject"
-              type="text"
-              value={formData.beadsProject}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+            <p className="mt-1 text-xs text-gray-500">
+              Comma-separated list of GitHub usernames
+            </p>
           </div>
         </div>
       </fieldset>

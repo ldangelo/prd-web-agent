@@ -34,14 +34,7 @@ const MOCK_GLOBAL_SETTINGS = {
   llmProvider: "anthropic",
   llmModel: "claude-sonnet-4-20250514",
   llmThinkingLevel: "medium",
-  confluenceSpace: "SPACE",
-  jiraProject: "PROJ",
-  gitRepo: "org/repo",
-  beadsProject: "beads",
   blockApprovalOnUnresolvedComments: true,
-  confluenceToken: null,
-  jiraToken: null,
-  gitToken: null,
   updatedAt: new Date("2026-01-01"),
 };
 

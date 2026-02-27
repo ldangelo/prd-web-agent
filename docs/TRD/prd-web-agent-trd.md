@@ -120,22 +120,22 @@
 ### Sprint 7: GitHub-Centric Auth, Projects & Submission (Weeks 13–15)
 
 - [x] **TASK-057:** Switch OAuth provider from Google to GitHub — update NextAuth config, request `repo`, `read:user`, `user:email` scopes, store OAuth token in Account table
-- [ ] **TASK-058:** Update login page — replace "Sign in with Google" with "Sign in with GitHub", update SVG logo
-- [ ] **TASK-059:** Create GitHub repo listing API — `GET /api/github/repos` endpoint that uses the user's OAuth token to list accessible repos via GitHub REST API, grouped by owner (user/orgs)
-- [ ] **TASK-060:** Build RepoPicker component — searchable dropdown with owner grouping, debounced search, loading states; auto-populates project name from repo name
-- [ ] **TASK-061:** Simplify Project model — remove `confluenceSpace`, `jiraProject`, `beadsProject` fields; add `githubRepo` (required, unique), `defaultLabels` (String[]), `defaultReviewers` (String[]); create Prisma migration
-- [ ] **TASK-062:** Update Project API — `POST /api/projects` accepts `githubRepo`, `defaultLabels`, `defaultReviewers`; validate repo exists via GitHub API; enforce unique `githubRepo` constraint
-- [ ] **TASK-063:** Refactor ProjectForm — integrate RepoPicker; remove Confluence/Jira/Beads fields; add labels and reviewers inputs
-- [ ] **TASK-064:** Simplify PRD model — remove `confluencePageId`, `jiraEpicKey`, `beadsIssueId` fields; add `githubPrUrl`, `githubPrNumber` (Int?), `githubBranch`; create Prisma migration
-- [ ] **TASK-065:** Simplify GlobalSettings model — remove `confluenceSpace`, `jiraProject`, `gitRepo`, `beadsProject`, `confluenceToken`, `jiraToken`, `gitToken` fields; keep `llmProvider`, `llmModel`, `llmThinkingLevel`, `blockApprovalOnUnresolvedComments`; create Prisma migration
-- [ ] **TASK-066:** Rewrite submission pipeline — single-step GitHub PR creation using user's OAuth token; branch `prd/<prd-id>-<slug>`, file `docs/PRD/<slug>-prd.md`; add configured labels and reviewers; re-submission pushes new commit to existing branch (no new PR)
-- [ ] **TASK-067:** Update SubmissionModal — single-step progress UI (no 4-step stepper); show PR link on success
-- [ ] **TASK-068:** Update RepoCloneService — per-user clones using OAuth token; EFS path `/efs/repos/<user-id>/<project-id>/`; token refresh handling
-- [ ] **TASK-069:** Handle repo access revocation — detect 403/404 from GitHub API; surface clear error messages; mark project as needing re-auth
-- [ ] **TASK-070:** Handle OAuth token expiration — detect expired tokens; prompt user to re-authenticate; refresh token if GitHub provides refresh_token
-- [ ] **TASK-071:** Delete dead integration code — remove ConfluenceService, JiraService, BeadsService, integration-config-service, and all related tests
-- [ ] **TASK-072:** Update admin settings page — remove integration credential fields; keep LLM config and workflow settings only
-- [ ] **TASK-073:** Update all affected tests — API route tests, service tests, component tests for auth, projects, submission, admin
+- [x] **TASK-058:** Update login page — replace "Sign in with Google" with "Sign in with GitHub", update SVG logo
+- [x] **TASK-059:** Create GitHub repo listing API — `GET /api/github/repos` endpoint that uses the user's OAuth token to list accessible repos via GitHub REST API, grouped by owner (user/orgs)
+- [x] **TASK-060:** Build RepoPicker component — searchable dropdown with owner grouping, debounced search, loading states; auto-populates project name from repo name
+- [x] **TASK-061:** Simplify Project model — remove `confluenceSpace`, `jiraProject`, `beadsProject` fields; add `githubRepo` (required, unique), `defaultLabels` (String[]), `defaultReviewers` (String[]); create Prisma migration
+- [x] **TASK-062:** Update Project API — `POST /api/projects` accepts `githubRepo`, `defaultLabels`, `defaultReviewers`; validate repo exists via GitHub API; enforce unique `githubRepo` constraint
+- [x] **TASK-063:** Refactor ProjectForm — integrate RepoPicker; remove Confluence/Jira/Beads fields; add labels and reviewers inputs
+- [x] **TASK-064:** Simplify PRD model — remove `confluencePageId`, `jiraEpicKey`, `beadsIssueId` fields; add `githubPrUrl`, `githubPrNumber` (Int?), `githubBranch`; create Prisma migration
+- [x] **TASK-065:** Simplify GlobalSettings model — remove `confluenceSpace`, `jiraProject`, `gitRepo`, `beadsProject`, `confluenceToken`, `jiraToken`, `gitToken` fields; keep `llmProvider`, `llmModel`, `llmThinkingLevel`, `blockApprovalOnUnresolvedComments`; create Prisma migration
+- [x] **TASK-066:** Rewrite submission pipeline — single-step GitHub PR creation using user's OAuth token; branch `prd/<prd-id>-<slug>`, file `docs/PRD/<slug>-prd.md`; add configured labels and reviewers; re-submission pushes new commit to existing branch (no new PR)
+- [x] **TASK-067:** Update SubmissionModal — single-step progress UI (no 4-step stepper); show PR link on success
+- [x] **TASK-068:** Update RepoCloneService — per-user clones using OAuth token; EFS path `/efs/repos/<user-id>/<project-id>/`; token refresh handling
+- [x] **TASK-069:** Handle repo access revocation — detect 403/404 from GitHub API; surface clear error messages; mark project as needing re-auth
+- [x] **TASK-070:** Handle OAuth token expiration — detect expired tokens; prompt user to re-authenticate; refresh token if GitHub provides refresh_token
+- [x] **TASK-071:** Delete dead integration code — remove ConfluenceService, JiraService, BeadsService, integration-config-service, and all related tests
+- [x] **TASK-072:** Update admin settings page — remove integration credential fields; keep LLM config and workflow settings only
+- [x] **TASK-073:** Update all affected tests — API route tests, service tests, component tests for auth, projects, submission, admin
 
 **Dependencies:** TASK-057 is prerequisite for all others. TASK-059, TASK-060 depend on TASK-057. TASK-061–TASK-065 can be parallelized. TASK-066 depends on TASK-064. TASK-068 depends on TASK-057. TASK-071 depends on TASK-066.
 

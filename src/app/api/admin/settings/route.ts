@@ -1,7 +1,7 @@
 /**
  * /api/admin/settings - Global settings API routes.
  *
- * GET  - Retrieve global settings (tokens redacted).
+ * GET  - Retrieve global settings.
  * PUT  - Update global settings (admin only).
  */
 import { type NextRequest } from "next/server";
@@ -9,7 +9,6 @@ import { requireAuth, requireAdmin } from "@/lib/auth";
 import { apiSuccess } from "@/lib/api/response";
 import { handleApiError } from "@/lib/api/errors";
 import { prisma } from "@/lib/prisma";
-import { redactTokens } from "@/services/integration-config-service";
 
 // ---------------------------------------------------------------------------
 // GET /api/admin/settings
@@ -27,7 +26,7 @@ export async function GET(request: NextRequest) {
       return apiSuccess(null);
     }
 
-    return apiSuccess(redactTokens(settings));
+    return apiSuccess(settings);
   } catch (error) {
     return handleApiError(error);
   }
@@ -45,13 +44,6 @@ export async function PUT(request: NextRequest) {
 
     // Filter to only allowed fields
     const allowedFields = [
-      "confluenceSpace",
-      "jiraProject",
-      "gitRepo",
-      "beadsProject",
-      "confluenceToken",
-      "jiraToken",
-      "gitToken",
       "llmProvider",
       "llmModel",
       "llmThinkingLevel",
@@ -74,7 +66,7 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return apiSuccess(redactTokens(settings));
+    return apiSuccess(settings);
   } catch (error) {
     return handleApiError(error);
   }

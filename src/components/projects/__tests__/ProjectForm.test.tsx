@@ -3,6 +3,43 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProjectForm } from "../ProjectForm";
 
+// Mock the RepoPicker component
+jest.mock("../RepoPicker", () => ({
+  RepoPicker: ({ value, onChange, disabled }: any) => (
+    <div data-testid="repo-picker">
+      {value ? (
+        <div>
+          <span data-testid="repo-picker-value">{value}</span>
+          <button
+            type="button"
+            data-testid="repo-picker-clear"
+            onClick={() => onChange(null)}
+            disabled={disabled}
+          >
+            Clear
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          data-testid="repo-picker-select"
+          onClick={() =>
+            onChange({
+              name: "test-repo",
+              fullName: "org/test-repo",
+              description: "A test repo",
+              private: false,
+            })
+          }
+          disabled={disabled}
+        >
+          Select Repo
+        </button>
+      )}
+    </div>
+  ),
+}));
+
 describe("ProjectForm", () => {
   const mockOnSubmit = jest.fn();
 
@@ -15,10 +52,9 @@ describe("ProjectForm", () => {
 
     expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/confluence space/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/jira project/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/git repo/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/beads project/i)).toBeInTheDocument();
+    expect(screen.getByTestId("repo-picker")).toBeInTheDocument();
+    expect(screen.getByLabelText(/default labels/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/default reviewers/i)).toBeInTheDocument();
   });
 
   it("renders name field as required", () => {
@@ -33,13 +69,15 @@ describe("ProjectForm", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls onSubmit with form data", async () => {
+  it("calls onSubmit with form data including githubRepo", async () => {
     const user = userEvent.setup();
     render(<ProjectForm onSubmit={mockOnSubmit} isLoading={false} />);
 
     await user.type(screen.getByLabelText(/name/i), "My Project");
     await user.type(screen.getByLabelText(/description/i), "A great project");
-    await user.type(screen.getByLabelText(/confluence space/i), "MYSPACE");
+    await user.click(screen.getByTestId("repo-picker-select"));
+    await user.type(screen.getByLabelText(/default labels/i), "bug, enhancement");
+    await user.type(screen.getByLabelText(/default reviewers/i), "user1, user2");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => {
@@ -47,7 +85,9 @@ describe("ProjectForm", () => {
         expect.objectContaining({
           name: "My Project",
           description: "A great project",
-          confluenceSpace: "MYSPACE",
+          githubRepo: "org/test-repo",
+          defaultLabels: ["bug", "enhancement"],
+          defaultReviewers: ["user1", "user2"],
         }),
       );
     });
@@ -64,10 +104,9 @@ describe("ProjectForm", () => {
     const initialData = {
       name: "Existing Project",
       description: "Existing description",
-      confluenceSpace: "CONF",
-      jiraProject: "JIRA-1",
-      gitRepo: "https://github.com/org/repo",
-      beadsProject: "beads-123",
+      githubRepo: "org/existing-repo",
+      defaultLabels: ["label1", "label2"],
+      defaultReviewers: ["reviewer1"],
     };
 
     render(
@@ -82,11 +121,43 @@ describe("ProjectForm", () => {
     expect(screen.getByLabelText(/description/i)).toHaveValue(
       "Existing description",
     );
-    expect(screen.getByLabelText(/confluence space/i)).toHaveValue("CONF");
-    expect(screen.getByLabelText(/jira project/i)).toHaveValue("JIRA-1");
-    expect(screen.getByLabelText(/git repo/i)).toHaveValue(
-      "https://github.com/org/repo",
+    expect(screen.getByTestId("repo-picker-value")).toHaveTextContent(
+      "org/existing-repo",
     );
-    expect(screen.getByLabelText(/beads project/i)).toHaveValue("beads-123");
+    expect(screen.getByLabelText(/default labels/i)).toHaveValue(
+      "label1, label2",
+    );
+    expect(screen.getByLabelText(/default reviewers/i)).toHaveValue(
+      "reviewer1",
+    );
+  });
+
+  it("clears githubRepo when RepoPicker is cleared", async () => {
+    const user = userEvent.setup();
+    const initialData = {
+      name: "Test",
+      githubRepo: "org/existing-repo",
+      defaultLabels: [] as string[],
+      defaultReviewers: [] as string[],
+    };
+
+    render(
+      <ProjectForm
+        initialData={initialData}
+        onSubmit={mockOnSubmit}
+        isLoading={false}
+      />,
+    );
+
+    await user.click(screen.getByTestId("repo-picker-clear"));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          githubRepo: "",
+        }),
+      );
+    });
   });
 });

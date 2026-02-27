@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { SubmissionStep, SubmissionStepName } from "@/types/submission";
+import type { SubmissionStep } from "@/types/submission";
 
 export interface SubmissionProgressProps {
   /** The submission pipeline steps with their current status */
@@ -9,13 +9,6 @@ export interface SubmissionProgressProps {
   /** Callback invoked when a failed step's retry button is clicked */
   onRetry: (stepName: string) => void;
 }
-
-const STEP_LABELS: Record<SubmissionStepName, string> = {
-  confluence: "Confluence",
-  jira: "Jira",
-  git: "Git",
-  beads: "Beads",
-};
 
 function StatusIcon({ status }: { status: SubmissionStep["status"] }) {
   switch (status) {
@@ -115,70 +108,60 @@ function StatusIcon({ status }: { status: SubmissionStep["status"] }) {
 }
 
 /**
- * 4-step horizontal progress stepper for the submission pipeline.
+ * Single-step progress display for the GitHub PR submission pipeline.
  *
- * Displays Confluence, Jira, Git, and Beads steps with status icons,
- * retry buttons for failed steps, and artifact links for successful ones.
+ * Shows the "Creating GitHub PR" step with pending/in_progress/success/failed
+ * status icon, a clickable PR link on success, and a retry button on failure.
  */
 export function SubmissionProgress({
   steps,
   onRetry,
 }: SubmissionProgressProps) {
+  const step = steps[0];
+  if (!step) return null;
+
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between">
-        {steps.map((step, index) => (
-          <React.Fragment key={step.name}>
-            {/* Step */}
-            <div className="flex flex-col items-center gap-2">
-              <StatusIcon status={step.status} />
-              <span className="text-sm font-medium text-gray-700">
-                {STEP_LABELS[step.name]}
-              </span>
+      <div className="flex items-center gap-4">
+        <StatusIcon status={step.status} />
 
-              {/* Artifact link for successful steps */}
-              {step.status === "success" && step.artifactLink && (
-                <a
-                  href={step.artifactLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-600 underline hover:text-blue-800"
-                  aria-label="View artifact"
-                >
-                  View artifact
-                </a>
-              )}
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-gray-700">
+            Creating GitHub PR
+          </span>
 
-              {/* Error message and retry for failed steps */}
-              {step.status === "failed" && (
-                <div className="flex flex-col items-center gap-1">
-                  {step.error && (
-                    <span className="max-w-[120px] text-center text-xs text-red-600">
-                      {step.error}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => onRetry(step.name)}
-                    className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200"
-                    aria-label={`Retry ${STEP_LABELS[step.name]}`}
-                  >
-                    Retry
-                  </button>
-                </div>
+          {/* PR link on success */}
+          {step.status === "success" && step.artifactLink && (
+            <a
+              href={step.artifactLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-600 underline hover:text-blue-800"
+              aria-label="View pull request"
+            >
+              View pull request
+            </a>
+          )}
+
+          {/* Error message and retry on failure */}
+          {step.status === "failed" && (
+            <div className="flex flex-col gap-1">
+              {step.error && (
+                <span className="text-xs text-red-600">
+                  {step.error}
+                </span>
               )}
+              <button
+                type="button"
+                onClick={() => onRetry(step.name)}
+                className="w-fit rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200"
+                aria-label="Retry"
+              >
+                Retry
+              </button>
             </div>
-
-            {/* Connector line between steps */}
-            {index < steps.length - 1 && (
-              <div
-                data-testid="step-connector"
-                className="mx-2 h-0.5 flex-1 bg-gray-300"
-                aria-hidden="true"
-              />
-            )}
-          </React.Fragment>
-        ))}
+          )}
+        </div>
       </div>
     </div>
   );
