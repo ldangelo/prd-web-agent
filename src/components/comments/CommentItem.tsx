@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Check } from "lucide-react";
 import type { CommentData } from "@/types/comments";
 
 export interface CommentItemProps {
@@ -62,20 +63,7 @@ export function CommentItem({ comment, onResolve, showResolve }: CommentItemProp
             }`}
             aria-label={comment.resolved ? "Unresolve comment" : "Resolve comment"}
           >
-            <svg
-              className="h-3.5 w-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.5 12.75l6 6 9-13.5"
-              />
-            </svg>
+            <Check className="h-3.5 w-3.5" aria-hidden="true" />
             {comment.resolved ? "Unresolve" : "Resolve"}
           </button>
         )}

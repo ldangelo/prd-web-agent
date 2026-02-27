@@ -13,6 +13,13 @@ import {
   SearchBar,
 } from "@/components/dashboard";
 import type { PrdListItemData, FilterValues } from "@/components/dashboard";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -234,40 +241,24 @@ export default function DashboardPage() {
       {/* PRD table */}
       {!loading && items.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Title
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Project
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Author
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Tags
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Updated
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Version
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {items.map((item) => (
-                  <PrdListItem key={item.id} prd={item} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Project</TableHead>
+                <TableHead>Author</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Tags</TableHead>
+                <TableHead>Updated</TableHead>
+                <TableHead>Version</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <PrdListItem key={item.id} prd={item} />
+              ))}
+            </TableBody>
+          </Table>
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (

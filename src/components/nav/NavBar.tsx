@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth/auth";
 import { NavLinks } from "./NavLinks";
-import { MobileMenuButton } from "./MobileMenuButton";
+import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
 import { NotificationBell } from "@/components/notifications";
 
@@ -51,9 +51,9 @@ export async function NavBar() {
             />
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile nav (Sheet-based slide-out) */}
           <div className="sm:hidden">
-            <MobileMenuButton links={links} userName={session.user.name} />
+            <MobileNav links={links} userName={session.user.name} />
           </div>
         </div>
       </div>

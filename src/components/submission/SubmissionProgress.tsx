@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Circle, Loader2, Check, X } from "lucide-react";
 import type { SubmissionStep } from "@/types/submission";
 
 export interface SubmissionProgressProps {
@@ -16,17 +17,10 @@ function StatusIcon({ status }: { status: SubmissionStep["status"] }) {
       return (
         <span
           data-testid="status-pending"
-          className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-300 text-gray-400"
+          className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-border text-muted-foreground"
           aria-label="Pending"
         >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <circle cx="12" cy="12" r="10" strokeWidth="2" />
-          </svg>
+          <Circle className="h-4 w-4" />
         </span>
       );
 
@@ -37,25 +31,7 @@ function StatusIcon({ status }: { status: SubmissionStep["status"] }) {
           className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-blue-500 text-blue-500"
           aria-label="In progress"
         >
-          <svg
-            className="h-4 w-4 animate-spin"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
+          <Loader2 className="h-4 w-4 animate-spin" />
         </span>
       );
 
@@ -66,19 +42,7 @@ function StatusIcon({ status }: { status: SubmissionStep["status"] }) {
           className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600"
           aria-label="Success"
         >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+          <Check className="h-5 w-5" />
         </span>
       );
 
@@ -89,19 +53,7 @@ function StatusIcon({ status }: { status: SubmissionStep["status"] }) {
           className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-600"
           aria-label="Failed"
         >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          <X className="h-5 w-5" />
         </span>
       );
   }
@@ -126,7 +78,7 @@ export function SubmissionProgress({
         <StatusIcon status={step.status} />
 
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-foreground">
             Creating GitHub PR
           </span>
 
@@ -136,7 +88,7 @@ export function SubmissionProgress({
               href={step.artifactLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-blue-600 underline hover:text-blue-800"
+              className="text-xs text-primary underline hover:text-primary/80"
               aria-label="View pull request"
             >
               View pull request

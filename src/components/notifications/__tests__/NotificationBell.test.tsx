@@ -3,6 +3,15 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NotificationBell } from "../NotificationBell";
 
+// Mock Radix Dropdown portal to render inline for tests
+jest.mock("@radix-ui/react-dropdown-menu", () => {
+  const actual = jest.requireActual("@radix-ui/react-dropdown-menu");
+  return {
+    ...actual,
+    Portal: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  };
+});
+
 beforeEach(() => {
   global.fetch = jest.fn();
 });
@@ -54,7 +63,7 @@ describe("NotificationBell", () => {
     });
   });
 
-  it("toggles dropdown on click", async () => {
+  it("opens dropdown on click and shows notifications", async () => {
     const user = userEvent.setup();
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,

@@ -74,7 +74,7 @@ export default function EditProjectPage() {
   if (isLoading) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-        <p className="text-center text-gray-500">Loading project...</p>
+        <p className="text-center text-muted-foreground">Loading project...</p>
       </main>
     );
   }
@@ -91,7 +91,7 @@ export default function EditProjectPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold text-gray-900">Edit Project</h1>
+      <h1 className="text-2xl font-bold text-foreground">Edit Project</h1>
 
       {error && (
         <div className="mt-4 rounded-md bg-red-50 p-4" role="alert">

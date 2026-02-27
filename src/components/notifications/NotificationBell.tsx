@@ -1,11 +1,41 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { Bell } from "lucide-react";
 import type { NotificationData } from "@/types/notifications";
-import { NotificationDropdown } from "./NotificationDropdown";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+function getTypeIcon(type: string): string {
+  switch (type) {
+    case "comment":
+      return "\uD83D\uDCAC";
+    case "status":
+      return "\uD83D\uDD04";
+    case "mention":
+      return "@";
+    default:
+      return "\uD83D\uDD14";
+  }
+}
+
+function formatTimestamp(iso: string): string {
+  const date = new Date(iso);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export function NotificationBell() {
-  const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
 
@@ -40,46 +70,88 @@ export function NotificationBell() {
     window.location.href = `/prds/${prdId}`;
   };
 
+  const handleNotificationClick = (notification: NotificationData) => {
+    handleMarkRead(notification.id);
+    if (notification.prdId) {
+      handleNavigate(notification.prdId);
+    }
+  };
+
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-        aria-label="Notifications"
-      >
-        <svg
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-          aria-hidden="true"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="relative rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          aria-label="Notifications"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
-          />
-        </svg>
+          <Bell className="h-6 w-6" aria-hidden="true" />
 
-        {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-            {unreadCount}
-          </span>
-        )}
-      </button>
+          {unreadCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              {unreadCount}
+            </span>
+          )}
+        </button>
+      </DropdownMenuTrigger>
 
-      {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2">
-          <NotificationDropdown
-            notifications={notifications}
-            onMarkRead={handleMarkRead}
-            onMarkAllRead={handleMarkAllRead}
-            onNavigate={handleNavigate}
-          />
+      <DropdownMenuContent align="end" className="w-80">
+        <div className="flex items-center justify-between px-2 py-1.5">
+          <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+          <button
+            type="button"
+            onClick={handleMarkAllRead}
+            className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+            aria-label="Mark all as read"
+          >
+            Mark all as read
+          </button>
         </div>
-      )}
-    </div>
+        <DropdownMenuSeparator />
+
+        {notifications.length === 0 ? (
+          <div className="px-4 py-6 text-center text-sm text-gray-400">
+            No notifications
+          </div>
+        ) : (
+          notifications.map((notification) => (
+            <DropdownMenuItem
+              key={notification.id}
+              className={`cursor-pointer px-3 py-2.5 ${
+                !notification.read ? "bg-indigo-50" : ""
+              }`}
+              data-unread={String(!notification.read)}
+              onClick={() => handleNotificationClick(notification)}
+            >
+              <div className="flex items-start gap-3 w-full">
+                <span className="mt-0.5 text-sm" aria-hidden="true">
+                  {getTypeIcon(notification.type)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`text-sm ${
+                      !notification.read
+                        ? "font-medium text-gray-900"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    {notification.message}
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    {formatTimestamp(notification.createdAt)}
+                  </p>
+                </div>
+                {!notification.read && (
+                  <span
+                    className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-indigo-500"
+                    aria-label="Unread"
+                  />
+                )}
+              </div>
+            </DropdownMenuItem>
+          ))
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

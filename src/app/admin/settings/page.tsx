@@ -77,25 +77,25 @@ export default function AdminSettingsPage() {
   if (loading) {
     return (
       <main className="p-8">
-        <p className="text-gray-500">Loading settings...</p>
+        <p className="text-muted-foreground">Loading settings...</p>
       </main>
     );
   }
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-8 text-2xl font-bold text-gray-900">Admin Settings</h1>
+      <h1 className="mb-8 text-2xl font-bold text-foreground">Admin Settings</h1>
 
       {/* LLM Configuration */}
-      <section className="mb-8 rounded-lg border border-gray-200 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-800">
+      <section className="mb-8 rounded-lg border border-border p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           LLM Configuration
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label
               htmlFor="llm-provider"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-muted-foreground"
             >
               Provider
             </label>
@@ -103,7 +103,7 @@ export default function AdminSettingsPage() {
               id="llm-provider"
               value={settings.llmProvider}
               onChange={(e) => updateField("llmProvider", e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="anthropic">Anthropic</option>
               <option value="openai">OpenAI</option>
@@ -112,7 +112,7 @@ export default function AdminSettingsPage() {
           <div>
             <label
               htmlFor="llm-model"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-muted-foreground"
             >
               Model
             </label>
@@ -121,13 +121,13 @@ export default function AdminSettingsPage() {
               type="text"
               value={settings.llmModel}
               onChange={(e) => updateField("llmModel", e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
           <div>
             <label
               htmlFor="llm-thinking-level"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-muted-foreground"
             >
               Thinking Level
             </label>
@@ -135,7 +135,7 @@ export default function AdminSettingsPage() {
               id="llm-thinking-level"
               value={settings.llmThinkingLevel}
               onChange={(e) => updateField("llmThinkingLevel", e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -146,8 +146,8 @@ export default function AdminSettingsPage() {
       </section>
 
       {/* Workflow Settings */}
-      <section className="mb-8 rounded-lg border border-gray-200 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-800">
+      <section className="mb-8 rounded-lg border border-border p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           Workflow Settings
         </h2>
         <label className="flex items-center gap-3">
@@ -157,9 +157,9 @@ export default function AdminSettingsPage() {
             onChange={(e) =>
               updateField("blockApprovalOnUnresolvedComments", e.target.checked)
             }
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
           />
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-muted-foreground">
             Block approval on unresolved comments
           </span>
         </label>
@@ -171,7 +171,7 @@ export default function AdminSettingsPage() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save Settings"}
         </button>
