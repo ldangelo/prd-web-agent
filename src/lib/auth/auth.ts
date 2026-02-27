@@ -1,13 +1,17 @@
 /**
  * NextAuth.js v5 configuration.
  *
- * Configures authentication with Google OAuth provider and JWT session
+ * Configures authentication with GitHub OAuth provider and JWT session
  * strategy. Uses PrismaAdapter for user/account persistence and maps
  * the custom User model fields (oauthId, oauthProvider, role) into
  * the JWT token and session.
+ *
+ * GitHub scopes requested: repo, read:user, user:email
+ * The OAuth access_token is stored in the Account table by PrismaAdapter
+ * and reused for GitHub API calls (repo listing, PR creation, repo cloning).
  */
 import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
+import GitHub from "next-auth/providers/github";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
@@ -43,22 +47,27 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    GitHub({
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      authorization: {
+        params: {
+          scope: "repo read:user user:email",
+        },
+      },
       /**
-       * Map the Google profile to our User model's custom fields.
-       * The PrismaAdapter handles Account creation, but we need to
-       * set oauthId and oauthProvider on the User record.
+       * Map the GitHub profile to our User model's custom fields.
+       * The PrismaAdapter handles Account creation (including access_token),
+       * but we need to set oauthId and oauthProvider on the User record.
        */
       profile(profile) {
         return {
-          id: profile.sub,
-          name: profile.name,
+          id: String(profile.id),
+          name: profile.name ?? profile.login,
           email: profile.email,
-          image: profile.picture,
-          oauthId: profile.sub,
-          oauthProvider: "google",
+          image: profile.avatar_url,
+          oauthId: String(profile.id),
+          oauthProvider: "github",
           role: "AUTHOR",
         };
       },
