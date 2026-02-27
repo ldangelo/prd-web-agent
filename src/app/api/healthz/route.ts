@@ -4,11 +4,9 @@
  * Checks connectivity to all critical dependencies:
  * - PostgreSQL (via Prisma)
  * - Redis (via ioredis)
- * - OpenSearch
  *
  * Returns 200 if all dependencies are reachable, 503 otherwise.
  */
-import { Client } from "@opensearch-project/opensearch";
 import Redis from "ioredis";
 
 import { apiSuccess, handleApiError } from "@/lib/api";
@@ -19,7 +17,6 @@ interface HealthStatus {
   checks: {
     database: CheckResult;
     redis: CheckResult;
-    opensearch: CheckResult;
   };
 }
 
@@ -69,40 +66,20 @@ async function checkRedis(): Promise<CheckResult> {
   }
 }
 
-async function checkOpenSearch(): Promise<CheckResult> {
-  const start = Date.now();
-  const client = new Client({
-    node: process.env.OPENSEARCH_URL || "http://localhost:9200",
-  });
-
-  try {
-    await client.cluster.health();
-    return { status: "up", latencyMs: Date.now() - start };
-  } catch (err) {
-    return {
-      status: "down",
-      latencyMs: Date.now() - start,
-      error: err instanceof Error ? err.message : "Unknown error",
-    };
-  }
-}
-
 export async function GET() {
   try {
-    const [database, redis, opensearch] = await Promise.all([
+    const [database, redis] = await Promise.all([
       checkDatabase(),
       checkRedis(),
-      checkOpenSearch(),
     ]);
 
     const allUp =
       database.status === "up" &&
-      redis.status === "up" &&
-      opensearch.status === "up";
+      redis.status === "up";
 
     const health: HealthStatus = {
       status: allUp ? "ok" : "degraded",
-      checks: { database, redis, opensearch },
+      checks: { database, redis },
     };
 
     if (!allUp) {

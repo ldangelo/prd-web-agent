@@ -1,13 +1,13 @@
 /**
- * OpenSearch search service for PRD full-text search.
+ * PostgreSQL full-text search service for PRD documents.
  *
- * Provides indexing, searching, and deletion of PRD documents
- * in an OpenSearch cluster for fast full-text search with
- * fuzzy matching and relevance ranking.
+ * Uses tsvector/tsquery with GIN index for fast full-text search.
+ * Replaces the previous OpenSearch-based implementation while
+ * maintaining the same public interface.
  */
-import { Client } from "@opensearch-project/opensearch";
+import { Prisma } from "@prisma/client";
 
-const PRD_INDEX = "prds";
+import { prisma } from "@/lib/prisma";
 
 export interface IndexPrdParams {
   prdId: string;
@@ -45,115 +45,124 @@ export interface SearchResult {
   hits: SearchHit[];
 }
 
-export class SearchService {
-  private client: Client;
+interface RawSearchRow {
+  id: string;
+  title: string;
+  status: string;
+  projectId: string;
+  authorId: string;
+  tags: string[];
+  version: number;
+  score: number;
+  highlight: string | null;
+}
 
-  constructor() {
-    this.client = new Client({
-      node: process.env.OPENSEARCH_URL || "http://localhost:9200",
-    });
+export class SearchService {
+  /**
+   * Ensure the search_vector column and GIN index exist on the Prd table.
+   * Idempotent - safe to call on every startup.
+   */
+  static async ensureSearchIndex(): Promise<void> {
+    await prisma.$executeRaw`
+      ALTER TABLE "Prd" ADD COLUMN IF NOT EXISTS search_vector tsvector;
+    `;
+    await prisma.$executeRaw`
+      CREATE INDEX IF NOT EXISTS prd_search_idx ON "Prd" USING GIN(search_vector);
+    `;
   }
 
   /**
-   * Index or update a PRD document in OpenSearch.
+   * Update the tsvector search_vector column for a PRD.
+   *
+   * Weights: title=A, content=B, tags=C so that title matches
+   * rank higher than body text which ranks higher than tags.
    */
   async indexPrd(params: IndexPrdParams): Promise<void> {
-    await this.client.index({
-      index: PRD_INDEX,
-      id: params.prdId,
-      body: {
-        title: params.title,
-        content: params.content,
-        projectId: params.projectId,
-        authorId: params.authorId,
-        status: params.status,
-        tags: params.tags,
-        version: params.version,
-        updatedAt: new Date().toISOString(),
-      },
-      refresh: true,
-    });
+    const tagsText = params.tags.join(" ");
+
+    await prisma.$executeRaw`
+      UPDATE "Prd" SET search_vector =
+        setweight(to_tsvector('english', ${params.title}), 'A') ||
+        setweight(to_tsvector('english', ${params.content}), 'B') ||
+        setweight(to_tsvector('english', ${tagsText}), 'C')
+      WHERE id = ${params.prdId}
+    `;
   }
 
   /**
    * Full-text search across PRD documents with optional filters.
    *
-   * Uses multi_match with fuzziness for typo tolerance and
-   * highlights matching fragments in title and content fields.
+   * Uses plainto_tsquery for safe query parsing (no special syntax needed),
+   * ts_rank for relevance scoring, and ts_headline for result highlighting.
    */
   async searchPrds(
     query: string,
     filters?: SearchFilters,
   ): Promise<SearchResult> {
-    const must = [
-      {
-        multi_match: {
-          query,
-          fields: ["title^3", "content", "tags^2"],
-          fuzziness: "AUTO",
-          type: "best_fields",
-        },
-      },
+    // Build dynamic WHERE clauses beyond the full-text match
+    const conditions: Prisma.Sql[] = [
+      Prisma.sql`p.search_vector @@ plainto_tsquery('english', ${query})`,
     ];
 
-    const filter: Record<string, unknown>[] = [];
-
     if (filters?.projectId) {
-      filter.push({ term: { projectId: filters.projectId } });
+      conditions.push(Prisma.sql`p."projectId" = ${filters.projectId}`);
     }
     if (filters?.status) {
-      filter.push({ term: { status: filters.status } });
+      conditions.push(Prisma.sql`p.status::text = ${filters.status}`);
     }
-    if (filters?.from || filters?.to) {
-      const range: Record<string, string> = {};
-      if (filters.from) range.gte = filters.from;
-      if (filters.to) range.lte = filters.to;
-      filter.push({ range: { updatedAt: range } });
+    if (filters?.from) {
+      conditions.push(Prisma.sql`p."updatedAt" >= ${new Date(filters.from)}`);
+    }
+    if (filters?.to) {
+      conditions.push(Prisma.sql`p."updatedAt" <= ${new Date(filters.to)}`);
     }
 
-    const response = await this.client.search({
-      index: PRD_INDEX,
-      body: {
-        query: {
-          bool: {
-            must,
-            filter,
-          },
-        },
-        highlight: {
-          fields: {
-            title: {},
-            content: { fragment_size: 200 },
-          },
-        },
-      },
-    });
+    const whereClause = Prisma.join(conditions, " AND ");
 
-    const hits = response.body.hits;
+    const rows = await prisma.$queryRaw<RawSearchRow[]>`
+      SELECT
+        p.id,
+        p.title,
+        p.status::text as status,
+        p."projectId",
+        p."authorId",
+        p.tags,
+        p."currentVersion" as version,
+        ts_rank(p.search_vector, plainto_tsquery('english', ${query})) as score,
+        ts_headline('english', v.content, plainto_tsquery('english', ${query}),
+          'MaxFragments=1,MaxWords=30,MinWords=10') as highlight
+      FROM "Prd" p
+      JOIN "PrdVersion" v ON v."prdId" = p.id AND v.version = p."currentVersion"
+      WHERE ${whereClause}
+      ORDER BY score DESC
+    `;
+
     return {
-      total: hits.total.value,
-      hits: hits.hits.map((hit: any) => ({
-        id: hit._id,
-        score: hit._score,
-        title: hit._source.title,
-        content: hit._source.content,
-        projectId: hit._source.projectId,
-        authorId: hit._source.authorId,
-        status: hit._source.status,
-        tags: hit._source.tags,
-        version: hit._source.version,
-        highlight: hit.highlight,
+      total: rows.length,
+      hits: rows.map((row) => ({
+        id: row.id,
+        score: Number(row.score),
+        title: row.title,
+        content: "",
+        projectId: row.projectId,
+        authorId: row.authorId,
+        status: row.status,
+        tags: row.tags ?? [],
+        version: row.version,
+        highlight: row.highlight
+          ? { content: [row.highlight] }
+          : undefined,
       })),
     };
   }
 
   /**
-   * Remove a PRD document from the search index.
+   * Remove a PRD from the search index.
+   *
+   * No-op: the tsvector column lives on the Prd row itself,
+   * so it is automatically deleted when the row is deleted.
    */
-  async deletePrdIndex(prdId: string): Promise<void> {
-    await this.client.delete({
-      index: PRD_INDEX,
-      id: prdId,
-    });
+  async deletePrdIndex(_prdId: string): Promise<void> {
+    // No-op - search vector is deleted with the row
   }
 }

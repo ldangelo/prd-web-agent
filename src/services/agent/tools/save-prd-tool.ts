@@ -1,6 +1,9 @@
 import { Type } from "@sinclair/typebox";
 import { prisma } from "@/lib/prisma";
+import { SearchService } from "@/services/search-service";
 import type { ToolDefinition, ToolResult } from "@/types/pi-sdk";
+
+const searchService = new SearchService();
 
 const SavePrdParams = Type.Object({
   title: Type.String({ description: "Title of the PRD" }),
@@ -80,7 +83,17 @@ export function createSavePrdTool(
           version = 1;
         }
 
-        // TODO: trigger OpenSearch indexing (stub)
+        // Update the PostgreSQL full-text search vector
+        await searchService.indexPrd({
+          prdId,
+          title: params.title,
+          content: params.content,
+          projectId,
+          authorId: userId,
+          status: existing ? existing.status : "DRAFT",
+          tags: existing ? existing.tags : [],
+          version,
+        });
 
         return {
           content: [

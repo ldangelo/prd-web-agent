@@ -65,7 +65,6 @@ persistence:
 env:
   DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/prd_web_agent"
   REDIS_URL: "redis://redis:6379"
-  OPENSEARCH_URL: "http://opensearch:9200"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
   NODE_ENV: "production"
   NEXT_TELEMETRY_DISABLED: "1"

@@ -1,7 +1,7 @@
 /**
  * /api/search - Full-text search API route.
  *
- * GET - Search PRDs via OpenSearch with optional filters.
+ * GET - Search PRDs via PostgreSQL full-text search with optional filters.
  */
 import { type NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";

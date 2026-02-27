@@ -141,11 +141,11 @@
 
 ### Sprint 8: Search Simplification (Week 16)
 
-- [ ] **TASK-074:** Replace OpenSearch with PostgreSQL full-text search — add `tsvector` column to PRD table; create GIN index; write search query using `ts_query` with ranking
-- [ ] **TASK-075:** Update search API — rewrite `GET /api/search` to query PostgreSQL FTS instead of OpenSearch; maintain existing query parameter interface
-- [ ] **TASK-076:** Remove OpenSearch infrastructure — remove from docker-compose, Helm chart, health checks, and all OpenSearch-related code
-- [ ] **TASK-077:** Update index sync — replace OpenSearch indexing with tsvector column update trigger on PRD version save
-- [ ] **TASK-078:** Update search-related tests
+- [x] **TASK-074:** Replace OpenSearch with PostgreSQL full-text search — add `tsvector` column to PRD table; create GIN index; write search query using `ts_query` with ranking
+- [x] **TASK-075:** Update search API — rewrite `GET /api/search` to query PostgreSQL FTS instead of OpenSearch; maintain existing query parameter interface
+- [x] **TASK-076:** Remove OpenSearch infrastructure — remove from docker-compose, Helm chart, health checks, and all OpenSearch-related code
+- [x] **TASK-077:** Update index sync — replace OpenSearch indexing with tsvector column update trigger on PRD version save
+- [x] **TASK-078:** Update search-related tests
 
 **Dependencies:** TASK-074 is prerequisite for TASK-075–TASK-078.
 

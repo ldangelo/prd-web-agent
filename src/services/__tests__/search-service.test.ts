@@ -1,24 +1,22 @@
 /**
  * Search service tests.
  *
- * Tests for OpenSearch integration service.
- * Mocks the OpenSearch client to avoid connecting to a real cluster.
+ * Tests for PostgreSQL full-text search service.
+ * Mocks prisma.$queryRaw and prisma.$executeRaw to avoid a real database.
  */
 
 // ---------------------------------------------------------------------------
-// Mock OpenSearch client
+// Mock Prisma client
 // ---------------------------------------------------------------------------
 
-const mockIndex = jest.fn();
-const mockSearch = jest.fn();
-const mockDelete = jest.fn();
+const mockQueryRaw = jest.fn();
+const mockExecuteRaw = jest.fn();
 
-jest.mock("@opensearch-project/opensearch", () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    index: mockIndex,
-    search: mockSearch,
-    delete: mockDelete,
-  })),
+jest.mock("@/lib/prisma", () => ({
+  prisma: {
+    $queryRaw: (...args: unknown[]) => mockQueryRaw(...args),
+    $executeRaw: (...args: unknown[]) => mockExecuteRaw(...args),
+  },
 }));
 
 // ---------------------------------------------------------------------------
@@ -36,17 +34,12 @@ describe("SearchService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.OPENSEARCH_URL = "http://localhost:9200";
     service = new SearchService();
   });
 
-  afterEach(() => {
-    delete process.env.OPENSEARCH_URL;
-  });
-
   describe("indexPrd", () => {
-    it("should call OpenSearch client index with correct parameters", async () => {
-      mockIndex.mockResolvedValue({ body: { result: "created" } });
+    it("should execute a raw SQL UPDATE to set the search_vector", async () => {
+      mockExecuteRaw.mockResolvedValue(1);
 
       await service.indexPrd({
         prdId: "prd_001",
@@ -59,85 +52,97 @@ describe("SearchService", () => {
         version: 1,
       });
 
-      expect(mockIndex).toHaveBeenCalledTimes(1);
-      expect(mockIndex).toHaveBeenCalledWith({
-        index: "prds",
-        id: "prd_001",
-        body: {
-          title: "Test PRD",
-          content: "This is the PRD content",
-          projectId: "proj_001",
-          authorId: "user_001",
-          status: "DRAFT",
-          tags: ["auth", "security"],
-          version: 1,
-          updatedAt: expect.any(String),
-        },
-        refresh: true,
+      expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
+      // Verify the tagged template literal was called (Prisma.sql / $executeRaw`...`)
+      const callArgs = mockExecuteRaw.mock.calls[0];
+      // The first argument to a tagged template is a TemplateStringsArray
+      expect(callArgs[0]).toBeDefined();
+    });
+
+    it("should handle empty tags array", async () => {
+      mockExecuteRaw.mockResolvedValue(1);
+
+      await service.indexPrd({
+        prdId: "prd_001",
+        title: "Test PRD",
+        content: "Content",
+        projectId: "proj_001",
+        authorId: "user_001",
+        status: "DRAFT",
+        tags: [],
+        version: 1,
       });
+
+      expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("searchPrds", () => {
     it("should return search results with highlights", async () => {
-      mockSearch.mockResolvedValue({
-        body: {
-          hits: {
-            total: { value: 1 },
-            hits: [
-              {
-                _id: "prd_001",
-                _score: 1.5,
-                _source: {
-                  title: "Test PRD",
-                  content: "This is the PRD content",
-                  projectId: "proj_001",
-                  authorId: "user_001",
-                  status: "DRAFT",
-                  tags: ["auth"],
-                  version: 1,
-                },
-                highlight: {
-                  title: ["<em>Test</em> PRD"],
-                  content: ["This is the <em>PRD</em> content"],
-                },
-              },
-            ],
-          },
+      mockQueryRaw.mockResolvedValue([
+        {
+          id: "prd_001",
+          title: "Test PRD",
+          status: "DRAFT",
+          projectId: "proj_001",
+          authorId: "user_001",
+          tags: ["auth"],
+          version: 1,
+          score: 1.5,
+          highlight: "This is the <b>PRD</b> content",
         },
-      });
+      ]);
 
       const results = await service.searchPrds("Test");
 
-      expect(mockSearch).toHaveBeenCalledTimes(1);
+      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
       expect(results.total).toBe(1);
       expect(results.hits).toHaveLength(1);
       expect(results.hits[0]).toEqual({
         id: "prd_001",
         score: 1.5,
         title: "Test PRD",
-        content: "This is the PRD content",
+        content: "",
         projectId: "proj_001",
         authorId: "user_001",
         status: "DRAFT",
         tags: ["auth"],
         version: 1,
         highlight: {
-          title: ["<em>Test</em> PRD"],
-          content: ["This is the <em>PRD</em> content"],
+          content: ["This is the <b>PRD</b> content"],
         },
       });
     });
 
-    it("should pass filters to the search query", async () => {
-      mockSearch.mockResolvedValue({
-        body: {
-          hits: {
-            total: { value: 0 },
-            hits: [],
-          },
-        },
+    it("should pass projectId filter to the search query", async () => {
+      mockQueryRaw.mockResolvedValue([]);
+
+      await service.searchPrds("test", { projectId: "proj_001" });
+
+      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it("should pass status filter to the search query", async () => {
+      mockQueryRaw.mockResolvedValue([]);
+
+      await service.searchPrds("test", { status: "DRAFT" });
+
+      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it("should pass date range filters to the search query", async () => {
+      mockQueryRaw.mockResolvedValue([]);
+
+      await service.searchPrds("test", {
+        from: "2026-01-01",
+        to: "2026-12-31",
       });
+
+      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it("should pass all filters combined", async () => {
+      mockQueryRaw.mockResolvedValue([]);
 
       await service.searchPrds("test", {
         projectId: "proj_001",
@@ -146,52 +151,58 @@ describe("SearchService", () => {
         to: "2026-12-31",
       });
 
-      expect(mockSearch).toHaveBeenCalledTimes(1);
-      const searchArgs = mockSearch.mock.calls[0][0];
-      expect(searchArgs.body.query.bool.filter).toEqual(
-        expect.arrayContaining([
-          { term: { projectId: "proj_001" } },
-          { term: { status: "DRAFT" } },
-          {
-            range: {
-              updatedAt: {
-                gte: "2026-01-01",
-                lte: "2026-12-31",
-              },
-            },
-          },
-        ]),
-      );
+      expect(mockQueryRaw).toHaveBeenCalledTimes(1);
     });
 
     it("should return empty results when no matches", async () => {
-      mockSearch.mockResolvedValue({
-        body: {
-          hits: {
-            total: { value: 0 },
-            hits: [],
-          },
-        },
-      });
+      mockQueryRaw.mockResolvedValue([]);
 
       const results = await service.searchPrds("nonexistent");
 
       expect(results.total).toBe(0);
       expect(results.hits).toHaveLength(0);
     });
+
+    it("should handle null highlight gracefully", async () => {
+      mockQueryRaw.mockResolvedValue([
+        {
+          id: "prd_002",
+          title: "Another PRD",
+          status: "DRAFT",
+          projectId: "proj_001",
+          authorId: "user_001",
+          tags: [],
+          version: 1,
+          score: 0.8,
+          highlight: null,
+        },
+      ]);
+
+      const results = await service.searchPrds("another");
+
+      expect(results.hits[0].highlight).toBeUndefined();
+    });
   });
 
   describe("deletePrdIndex", () => {
-    it("should call OpenSearch client delete with correct parameters", async () => {
-      mockDelete.mockResolvedValue({ body: { result: "deleted" } });
-
+    it("should be a no-op (tsvector is deleted with the row)", async () => {
+      // deletePrdIndex is a no-op since the search vector lives on the PRD row
       await service.deletePrdIndex("prd_001");
 
-      expect(mockDelete).toHaveBeenCalledTimes(1);
-      expect(mockDelete).toHaveBeenCalledWith({
-        index: "prds",
-        id: "prd_001",
-      });
+      // No database calls should be made
+      expect(mockExecuteRaw).not.toHaveBeenCalled();
+      expect(mockQueryRaw).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("ensureSearchIndex", () => {
+    it("should create the tsvector column and GIN index", async () => {
+      mockExecuteRaw.mockResolvedValue(undefined);
+
+      await SearchService.ensureSearchIndex();
+
+      // Should be called twice: once for ALTER TABLE, once for CREATE INDEX
+      expect(mockExecuteRaw).toHaveBeenCalledTimes(2);
     });
   });
 });

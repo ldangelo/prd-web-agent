@@ -1,3 +1,10 @@
+const mockIndexPrd = jest.fn();
+jest.mock("@/services/search-service", () => ({
+  SearchService: jest.fn().mockImplementation(() => ({
+    indexPrd: (...args: unknown[]) => mockIndexPrd(...args),
+  })),
+}));
+
 import { createSavePrdTool } from "../save-prd-tool";
 import { prisma } from "@/lib/prisma";
 
@@ -23,6 +30,7 @@ describe("save-prd-tool", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockIndexPrd.mockResolvedValue(undefined);
   });
 
   it("creates tool with correct name and description", () => {
