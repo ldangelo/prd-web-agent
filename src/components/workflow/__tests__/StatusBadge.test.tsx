@@ -3,20 +3,23 @@ import { render, screen } from "@testing-library/react";
 import { StatusBadge } from "../StatusBadge";
 
 describe("StatusBadge", () => {
-  it("renders Draft status with gray styling", () => {
+  it("renders Draft status with outline variant", () => {
     render(<StatusBadge status="Draft" />);
 
     const badge = screen.getByText("Draft");
     expect(badge).toBeInTheDocument();
-    expect(badge.className).toContain("bg-gray");
+    // outline variant has no bg-* class, just border
+    expect(badge.className).toContain("border");
+    expect(badge.className).not.toContain("bg-green");
+    expect(badge.className).not.toContain("bg-blue");
   });
 
-  it("renders In Review status with yellow styling", () => {
+  it("renders In Review status with secondary variant", () => {
     render(<StatusBadge status="In Review" />);
 
     const badge = screen.getByText("In Review");
     expect(badge).toBeInTheDocument();
-    expect(badge.className).toContain("bg-yellow");
+    expect(badge.className).toContain("bg-secondary");
   });
 
   it("renders Approved status with green styling", () => {
@@ -35,11 +38,11 @@ describe("StatusBadge", () => {
     expect(badge.className).toContain("bg-blue");
   });
 
-  it("renders unknown status with gray fallback", () => {
+  it("renders unknown status with outline fallback", () => {
     render(<StatusBadge status="Unknown" />);
 
     const badge = screen.getByText("Unknown");
     expect(badge).toBeInTheDocument();
-    expect(badge.className).toContain("bg-gray");
+    expect(badge.className).toContain("border");
   });
 });

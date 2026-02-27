@@ -111,7 +111,7 @@ export default function EditProjectPage() {
         <button
           type="button"
           onClick={handleCancel}
-          className="text-sm font-medium text-gray-600 hover:text-gray-900"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           Cancel
         </button>

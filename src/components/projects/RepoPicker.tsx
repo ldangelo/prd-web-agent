@@ -136,8 +136,8 @@ export function RepoPicker({ value, onChange, disabled }: RepoPickerProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="rounded-md border border-gray-300 p-4">
-        <p className="text-sm text-gray-500">Loading repositories...</p>
+      <div className="rounded-md border border-input p-4">
+        <p className="text-sm text-muted-foreground">Loading repositories...</p>
       </div>
     );
   }
@@ -154,14 +154,14 @@ export function RepoPicker({ value, onChange, disabled }: RepoPickerProps) {
   // Selected value display
   if (value) {
     return (
-      <div className="flex items-center justify-between rounded-md border border-gray-300 px-3 py-2">
-        <span className="text-sm text-gray-900">{value}</span>
+      <div className="flex items-center justify-between rounded-md border border-input px-3 py-2">
+        <span className="text-sm text-foreground">{value}</span>
         <button
           type="button"
           onClick={handleClear}
           disabled={disabled}
           aria-label="Clear selection"
-          className="ml-2 text-sm text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="ml-2 text-sm text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
           &times;
         </button>
@@ -177,19 +177,19 @@ export function RepoPicker({ value, onChange, disabled }: RepoPickerProps) {
         value={searchTerm}
         onChange={handleSearchChange}
         disabled={disabled}
-        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="block w-full rounded-md border border-input px-3 py-2 text-sm shadow-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       />
 
-      <div className="max-h-64 overflow-y-auto rounded-md border border-gray-200">
+      <div className="max-h-64 overflow-y-auto rounded-md border border-border">
         {filteredRepos.length === 0 ? (
           <div className="p-4 text-center">
-            <p className="text-sm text-gray-500">No repositories found</p>
+            <p className="text-sm text-muted-foreground">No repositories found</p>
           </div>
         ) : (
           Array.from(groupedRepos.entries()).map(([owner, ownerRepos]) => (
             <div key={owner}>
-              <div className="sticky top-0 bg-gray-50 px-3 py-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <div className="sticky top-0 bg-muted px-3 py-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {owner}
                 </span>
               </div>
@@ -199,7 +199,7 @@ export function RepoPicker({ value, onChange, disabled }: RepoPickerProps) {
                     key={repo.fullName}
                     role="option"
                     aria-selected={value === repo.fullName}
-                    className="cursor-pointer px-3 py-2 hover:bg-blue-50"
+                    className="cursor-pointer px-3 py-2 hover:bg-accent"
                     onClick={() => handleSelect(repo)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -210,17 +210,17 @@ export function RepoPicker({ value, onChange, disabled }: RepoPickerProps) {
                     tabIndex={0}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-foreground">
                         {repo.name}
                       </span>
                       {repo.private && (
-                        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                        <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                           Private
                         </span>
                       )}
                     </div>
                     {repo.description && (
-                      <p className="mt-0.5 text-xs text-gray-500 line-clamp-1">
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
                         {repo.description}
                       </p>
                     )}

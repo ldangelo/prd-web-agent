@@ -1,7 +1,7 @@
 /**
  * PrdListItem component tests.
  *
- * Verifies rendering of PRD data in a table row with status badge and tag pills.
+ * Verifies rendering of PRD data in a table row with shadcn Badge for status and tags.
  */
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -57,7 +57,7 @@ describe("PrdListItem", () => {
     expect(screen.getByText("v1")).toBeInTheDocument();
   });
 
-  it("should render Draft status badge with gray styling", () => {
+  it("should render Draft status badge with outline variant", () => {
     render(
       <table>
         <tbody>
@@ -67,10 +67,10 @@ describe("PrdListItem", () => {
     );
 
     const badge = screen.getByText("Draft");
-    expect(badge.className).toContain("bg-gray");
+    expect(badge.className).toContain("border");
   });
 
-  it("should render In Review status badge with yellow styling", () => {
+  it("should render In Review status badge with secondary variant", () => {
     render(
       <table>
         <tbody>
@@ -80,7 +80,7 @@ describe("PrdListItem", () => {
     );
 
     const badge = screen.getByText("In Review");
-    expect(badge.className).toContain("bg-yellow");
+    expect(badge.className).toContain("bg-secondary");
   });
 
   it("should render Approved status badge with green styling", () => {
@@ -124,7 +124,7 @@ describe("PrdListItem", () => {
     expect(mockPush).toHaveBeenCalledWith("/prd/prd_001");
   });
 
-  it("should render tags as pills", () => {
+  it("should render tags as shadcn Badge with secondary variant", () => {
     render(
       <table>
         <tbody>
@@ -135,8 +135,9 @@ describe("PrdListItem", () => {
 
     const authTag = screen.getByText("auth");
     const securityTag = screen.getByText("security");
-    expect(authTag.className).toContain("rounded");
-    expect(securityTag.className).toContain("rounded");
+    // shadcn Badge secondary variant
+    expect(authTag.className).toContain("bg-secondary");
+    expect(securityTag.className).toContain("bg-secondary");
   });
 
   it("should handle empty tags array", () => {

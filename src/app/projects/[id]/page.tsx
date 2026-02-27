@@ -54,7 +54,7 @@ export default function ProjectDetailPage() {
   if (isLoading) {
     return (
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <p className="text-center text-gray-500">Loading project...</p>
+        <p className="text-center text-muted-foreground">Loading project...</p>
       </main>
     );
   }
@@ -74,46 +74,46 @@ export default function ProjectDetailPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+        <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
         <Link
           href={`/projects/${projectId}/edit`}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
           Edit Project
         </Link>
       </div>
 
       {project.description && (
-        <p className="mt-4 text-gray-600">{project.description}</p>
+        <p className="mt-4 text-muted-foreground">{project.description}</p>
       )}
 
       <section className="mt-8" aria-labelledby="github-heading">
         <h2
           id="github-heading"
-          className="text-lg font-semibold text-gray-900"
+          className="text-lg font-semibold text-foreground"
         >
           GitHub Settings
         </h2>
         <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-md border border-gray-200 p-4">
-            <dt className="text-sm font-medium text-gray-500">
+          <div className="rounded-md border border-border p-4">
+            <dt className="text-sm font-medium text-muted-foreground">
               GitHub Repository
             </dt>
-            <dd className="mt-1 text-sm text-gray-900">
+            <dd className="mt-1 text-sm text-foreground">
               {project.githubRepo}
             </dd>
           </div>
-          <div className="rounded-md border border-gray-200 p-4">
-            <dt className="text-sm font-medium text-gray-500">Default Labels</dt>
-            <dd className="mt-1 text-sm text-gray-900">
+          <div className="rounded-md border border-border p-4">
+            <dt className="text-sm font-medium text-muted-foreground">Default Labels</dt>
+            <dd className="mt-1 text-sm text-foreground">
               {project.defaultLabels.length > 0
                 ? project.defaultLabels.join(", ")
                 : "None"}
             </dd>
           </div>
-          <div className="rounded-md border border-gray-200 p-4">
-            <dt className="text-sm font-medium text-gray-500">Default Reviewers</dt>
-            <dd className="mt-1 text-sm text-gray-900">
+          <div className="rounded-md border border-border p-4">
+            <dt className="text-sm font-medium text-muted-foreground">Default Reviewers</dt>
+            <dd className="mt-1 text-sm text-foreground">
               {project.defaultReviewers.length > 0
                 ? project.defaultReviewers.join(", ")
                 : "None"}
@@ -126,35 +126,35 @@ export default function ProjectDetailPage() {
         <div className="flex items-center justify-between">
           <h2
             id="members-heading"
-            className="text-lg font-semibold text-gray-900"
+            className="text-lg font-semibold text-foreground"
           >
             Members
           </h2>
           <button
             type="button"
-            className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
             Add Member
           </button>
         </div>
 
         {project.members.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">No members yet.</p>
+          <p className="mt-4 text-sm text-muted-foreground">No members yet.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-gray-200 rounded-md border border-gray-200">
+          <ul className="mt-4 divide-y divide-border rounded-md border border-border">
             {project.members.map((member) => (
               <li
                 key={member.id}
                 className="flex items-center justify-between px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-foreground">
                     {member.user.name}
                   </p>
-                  <p className="text-sm text-gray-500">{member.user.email}</p>
+                  <p className="text-sm text-muted-foreground">{member.user.email}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                  <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
                     {member.role}
                   </span>
                   {member.isReviewer && (

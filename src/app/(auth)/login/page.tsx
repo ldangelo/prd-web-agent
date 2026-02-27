@@ -11,12 +11,12 @@ function LoginForm() {
   return (
     <main className="w-full max-w-sm space-y-6 text-center">
       <h1 className="text-2xl font-bold">Sign In</h1>
-      <p className="text-gray-600">
+      <p className="text-muted-foreground">
         Sign in to manage your PRDs
       </p>
       <button
         onClick={() => signIn("github", { callbackUrl })}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-input bg-background px-4 py-3 text-sm font-medium text-foreground shadow-sm hover:bg-accent"
       >
         <svg
           className="h-5 w-5"
@@ -38,7 +38,7 @@ export default function LoginPage() {
       fallback={
         <main className="w-full max-w-sm space-y-6 text-center">
           <h1 className="text-2xl font-bold">Sign In</h1>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </main>
       }
     >

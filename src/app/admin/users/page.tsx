@@ -97,27 +97,27 @@ export default function AdminUsersPage() {
   if (loading) {
     return (
       <main className="p-8">
-        <p className="text-gray-500">Loading users...</p>
+        <p className="text-muted-foreground">Loading users...</p>
       </main>
     );
   }
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-8 text-2xl font-bold text-gray-900">
+      <h1 className="mb-8 text-2xl font-bold text-foreground">
         User Management
       </h1>
 
       {/* Add User Form */}
-      <section className="mb-8 rounded-lg border border-gray-200 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-800">
+      <section className="mb-8 rounded-lg border border-border p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           Add New User
         </h2>
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label
               htmlFor="new-user-name"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-muted-foreground"
             >
               Name
             </label>
@@ -127,13 +127,13 @@ export default function AdminUsersPage() {
               placeholder="Name"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="rounded-md border border-input px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
           <div>
             <label
               htmlFor="new-user-email"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-muted-foreground"
             >
               Email
             </label>
@@ -143,13 +143,13 @@ export default function AdminUsersPage() {
               placeholder="Email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="rounded-md border border-input px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
           <div>
             <label
               htmlFor="new-user-role"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-muted-foreground"
             >
               Role
             </label>
@@ -157,7 +157,7 @@ export default function AdminUsersPage() {
               id="new-user-role"
               value={newRole}
               onChange={(e) => setNewRole(e.target.value as User["role"])}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="rounded-md border border-input px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="Author">Author</option>
               <option value="Reviewer">Reviewer</option>
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
           <button
             type="button"
             onClick={handleAddUser}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Add User
           </button>
@@ -175,14 +175,14 @@ export default function AdminUsersPage() {
       </section>
 
       {/* User List */}
-      <section className="rounded-lg border border-gray-200">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-800">Users</h2>
+      <section className="rounded-lg border border-border">
+        <div className="border-b border-border px-6 py-4">
+          <h2 className="text-lg font-semibold text-foreground">Users</h2>
         </div>
         {users.length === 0 ? (
-          <p className="p-6 text-gray-500">No users found.</p>
+          <p className="p-6 text-muted-foreground">No users found.</p>
         ) : (
-          <ul className="divide-y divide-gray-200">
+          <ul className="divide-y divide-border">
             {users.map((user) => (
               <li
                 key={user.id}
@@ -190,10 +190,10 @@ export default function AdminUsersPage() {
               >
                 <div className="flex items-center gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-foreground">
                       {user.name}
                     </p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
                   <span
                     className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_BADGE_COLORS[user.role]}`}
@@ -215,7 +215,7 @@ export default function AdminUsersPage() {
                         e.target.value as User["role"],
                       )
                     }
-                    className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="rounded-md border border-input px-2 py-1 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                   >
                     <option value="Author">Author</option>
                     <option value="Reviewer">Reviewer</option>
@@ -236,7 +236,7 @@ export default function AdminUsersPage() {
                       <button
                         type="button"
                         onClick={() => setConfirmRemoveId(null)}
-                        className="rounded bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-300"
+                        className="rounded bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary/80"
                         aria-label="Cancel remove"
                       >
                         No

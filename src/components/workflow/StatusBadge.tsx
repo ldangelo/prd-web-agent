@@ -1,26 +1,26 @@
 "use client";
 
 import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export interface StatusBadgeProps {
   status: string;
 }
 
-const statusStyles: Record<string, string> = {
-  Draft: "bg-gray-100 text-gray-700",
-  "In Review": "bg-yellow-100 text-yellow-800",
-  Approved: "bg-green-100 text-green-800",
-  Submitted: "bg-blue-100 text-blue-800",
+const statusVariantMap: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; className?: string; label?: string }> = {
+  Draft: { variant: "outline" },
+  "In Review": { variant: "secondary" },
+  Approved: { variant: "default", className: "bg-green-600 hover:bg-green-600/80" },
+  Submitted: { variant: "default", className: "bg-blue-600 hover:bg-blue-600/80" },
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const style = statusStyles[status] ?? "bg-gray-100 text-gray-700";
+  const config = statusVariantMap[status] ?? { variant: "outline" as const };
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${style}`}
-    >
+    <Badge variant={config.variant} className={cn(config.className)}>
       {status}
-    </span>
+    </Badge>
   );
 }

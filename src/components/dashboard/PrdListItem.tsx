@@ -7,6 +7,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,22 +31,27 @@ export interface PrdListItemData {
 // Status display config
 // ---------------------------------------------------------------------------
 
-const STATUS_CONFIG: Record<PrdStatus, { label: string; className: string }> = {
+const STATUS_CONFIG: Record<
+  PrdStatus,
+  { label: string; variant: "default" | "secondary" | "destructive" | "outline"; className?: string }
+> = {
   DRAFT: {
     label: "Draft",
-    className: "bg-gray-100 text-gray-800",
+    variant: "outline",
   },
   IN_REVIEW: {
     label: "In Review",
-    className: "bg-yellow-100 text-yellow-800",
+    variant: "secondary",
   },
   APPROVED: {
     label: "Approved",
-    className: "bg-green-100 text-green-800",
+    variant: "default",
+    className: "bg-green-600 hover:bg-green-600/80",
   },
   SUBMITTED: {
     label: "Submitted",
-    className: "bg-blue-100 text-blue-800",
+    variant: "default",
+    className: "bg-blue-600 hover:bg-blue-600/80",
   },
 };
 
@@ -77,21 +84,16 @@ export function PrdListItem({ prd }: { prd: PrdListItemData }) {
         {prd.author.name}
       </td>
       <td className="px-4 py-3">
-        <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusConfig.className}`}
-        >
+        <Badge variant={statusConfig.variant} className={cn(statusConfig.className)}>
           {statusConfig.label}
-        </span>
+        </Badge>
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap gap-1">
           {prd.tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
-            >
+            <Badge key={tag} variant="secondary">
               {tag}
-            </span>
+            </Badge>
           ))}
         </div>
       </td>
