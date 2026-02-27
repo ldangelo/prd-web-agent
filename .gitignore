@@ -1,0 +1,9 @@
+node_modules/
+.devbox/
+.trd-state/
+.local-efs/
+.env
+.next/
+coverage/
+logs/
+*.tsbuildinfo

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/main/.schema/devbox.schema.json",
+  "packages": [
+    "nodejs_20",
+    "docker-client",
+    "docker-compose",
+    "postgresql_15",
+    "redis",
+    "curl",
+    "jq",
+    "python312"
+  ],
+  "env": {},
+  "shell": {
+    "init_hook": [
+      "echo '🔧 Initializing devbox environment...'",
+      "source devbox.d/init.sh"
+    ],
+    "scripts": {
+      "setup": [
+        "source devbox.d/setup-env.sh",
+        "npm install && npx prisma generate"
+      ],
+      "services:up": [
+        "docker compose up -d"
+      ],
+      "services:down": [
+        "docker compose down"
+      ],
+      "services:reset": [
+        "docker compose down -v && docker compose up -d"
+      ],
+      "db:migrate": [
+        "npx prisma migrate dev"
+      ],
+      "db:seed": [
+        "npx prisma db seed"
+      ],
+      "db:reset": [
+        "npx prisma migrate reset --force"
+      ],
+      "db:studio": [
+        "npx prisma studio"
+      ],
+      "dev": [
+        "npm run dev"
+      ],
+      "test": [
+        "npm test"
+      ],
+      "doctor": [
+        "source devbox.d/doctor.sh"
+      ]
+    }
+  }
+}

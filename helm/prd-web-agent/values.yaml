@@ -1,0 +1,97 @@
+# Default values for prd-web-agent.
+
+replicaCount: 2
+
+image:
+  repository: ""
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=86400
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+  hosts:
+    - host: prd-web-agent.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# EFS persistent volume for repo clones
+persistence:
+  enabled: true
+  storageClassName: efs-sc
+  accessModes:
+    - ReadWriteMany
+  size: 50Gi
+  mountPath: /data/repos
+
+# Non-secret environment variables (placed in ConfigMap)
+env:
+  DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/prd_web_agent"
+  REDIS_URL: "redis://redis:6379"
+  OPENSEARCH_URL: "http://opensearch:9200"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  NODE_ENV: "production"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+# Sensitive environment variables (placed in Secret)
+secrets:
+  NEXTAUTH_SECRET: ""
+  NEXTAUTH_URL: ""
+  GITHUB_CLIENT_ID: ""
+  GITHUB_CLIENT_SECRET: ""
+
+# Probe configuration
+probes:
+  liveness:
+    path: /api/livez
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readiness:
+    path: /api/healthz
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

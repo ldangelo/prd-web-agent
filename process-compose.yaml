@@ -1,0 +1,43 @@
+version: "0.5"
+
+processes:
+  docker-services:
+    command: docker compose up --abort-on-container-exit
+    working_dir: .
+    readiness_probe:
+      exec:
+        command: >-
+          docker inspect --format='{{.State.Health.Status}}' prd-web-agent-postgres | grep -q healthy &&
+          docker inspect --format='{{.State.Health.Status}}' prd-web-agent-redis | grep -q healthy
+      initial_delay_seconds: 5
+      period_seconds: 5
+    availability:
+      restart: on_failure
+      max_restarts: 3
+    shutdown:
+      command: docker compose down
+      signal: 2
+      timeout_seconds: 30
+
+  db-migrate:
+    command: npx prisma migrate dev
+    working_dir: .
+    depends_on:
+      docker-services:
+        condition: process_healthy
+    availability:
+      restart: "no"
+      exit_on_end: true
+
+  next-dev:
+    command: npm run dev
+    working_dir: .
+    depends_on:
+      db-migrate:
+        condition: process_completed_successfully
+    readiness_probe:
+      http_get:
+        host: localhost
+        port: 3000
+      initial_delay_seconds: 5
+      period_seconds: 5

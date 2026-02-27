@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx jest:*)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(cat:*)",
+      "Bash(jj status:*)",
+      "Bash(jj log:*)",
+      "Bash(jj split:*)",
+      "Bash(jj describe:*)",
+      "Bash(JJ_EDITOR=true jj split:*)"
+    ]
+  }
+}
