@@ -116,6 +116,8 @@ model Prd {
   githubPrUrl      String?
   githubPrNumber   Int?
   githubBranch     String?
+  generationStatus String?
+  generationError  String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
