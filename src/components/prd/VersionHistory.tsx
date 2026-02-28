@@ -69,7 +69,7 @@ export function VersionHistory({ prdId, onVersionSelect }: VersionHistoryProps) 
 
   if (loading) {
     return (
-      <p className="text-sm text-gray-500">Loading versions...</p>
+      <p className="text-sm text-muted-foreground">Loading versions...</p>
     );
   }
 
@@ -81,45 +81,45 @@ export function VersionHistory({ prdId, onVersionSelect }: VersionHistoryProps) 
 
   if (versions.length === 0) {
     return (
-      <p className="text-sm text-gray-500">No versions available.</p>
+      <p className="text-sm text-muted-foreground">No versions available.</p>
     );
   }
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Version History
       </h3>
-      <ul className="divide-y divide-gray-200" role="list">
+      <ul className="divide-y divide-border" role="list">
         {versions.map((v) => (
           <li key={v.id} className="py-3">
             <button
               type="button"
               onClick={() => handleVersionClick(v.version)}
-              className={`w-full text-left rounded px-3 py-2 transition-colors hover:bg-gray-50 ${
+              className={`w-full text-left rounded px-3 py-2 transition-colors hover:bg-muted ${
                 selectedVersion === v.version
-                  ? "bg-blue-50 ring-1 ring-blue-200"
+                  ? "bg-accent ring-1 ring-ring"
                   : ""
               }`}
               aria-current={selectedVersion === v.version ? "true" : undefined}
             >
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-900">
+                <span className="font-medium text-foreground">
                   Version {v.version}
                 </span>
                 <time
                   dateTime={v.createdAt}
-                  className="text-xs text-gray-500"
+                  className="text-xs text-muted-foreground"
                 >
                   {new Date(v.createdAt).toLocaleDateString()}
                 </time>
               </div>
               {v.changeSummary && (
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {v.changeSummary}
                 </p>
               )}
-              <p className="mt-0.5 text-xs text-gray-400">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 by {v.authorId}
               </p>
             </button>

@@ -20,7 +20,7 @@ export function CommentThread({ comment, onReply, onResolve }: CommentThreadProp
   };
 
   return (
-    <div className="border-l-2 border-gray-200 pl-4">
+    <div className="border-l-2 border-border pl-4">
       <CommentItem comment={comment} onResolve={onResolve} showResolve />
 
       {comment.replies.length > 0 && (
@@ -41,7 +41,7 @@ export function CommentThread({ comment, onReply, onResolve }: CommentThreadProp
           <button
             type="button"
             onClick={() => setShowReplyComposer(true)}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+            className="text-xs font-medium text-primary hover:text-primary/80"
           >
             Reply
           </button>
@@ -54,7 +54,7 @@ export function CommentThread({ comment, onReply, onResolve }: CommentThreadProp
             <button
               type="button"
               onClick={() => setShowReplyComposer(false)}
-              className="mt-1 text-xs text-gray-500 hover:text-gray-700"
+              className="mt-1 text-xs text-muted-foreground hover:text-foreground"
             >
               Cancel
             </button>

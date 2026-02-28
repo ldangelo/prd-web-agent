@@ -82,14 +82,22 @@ export function NotificationBell() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="relative rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          className="relative rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           aria-label="Notifications"
         >
           <Bell className="h-6 w-6" aria-hidden="true" />
 
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            <span
+              className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"
+              aria-hidden="true"
+            >
               {unreadCount}
+            </span>
+          )}
+          {unreadCount > 0 && (
+            <span className="sr-only">
+              {unreadCount} unread {unreadCount === 1 ? "notification" : "notifications"}
             </span>
           )}
         </button>
@@ -101,7 +109,7 @@ export function NotificationBell() {
           <button
             type="button"
             onClick={handleMarkAllRead}
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+            className="text-xs font-medium text-primary hover:text-primary/80"
             aria-label="Mark all as read"
           >
             Mark all as read
@@ -110,7 +118,7 @@ export function NotificationBell() {
         <DropdownMenuSeparator />
 
         {notifications.length === 0 ? (
-          <div className="px-4 py-6 text-center text-sm text-gray-400">
+          <div className="px-4 py-6 text-center text-sm text-muted-foreground">
             No notifications
           </div>
         ) : (
@@ -118,7 +126,7 @@ export function NotificationBell() {
             <DropdownMenuItem
               key={notification.id}
               className={`cursor-pointer px-3 py-2.5 ${
-                !notification.read ? "bg-indigo-50" : ""
+                !notification.read ? "bg-accent" : ""
               }`}
               data-unread={String(!notification.read)}
               onClick={() => handleNotificationClick(notification)}
@@ -131,19 +139,19 @@ export function NotificationBell() {
                   <p
                     className={`text-sm ${
                       !notification.read
-                        ? "font-medium text-gray-900"
-                        : "text-gray-600"
+                        ? "font-medium text-foreground"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {notification.message}
                   </p>
-                  <p className="mt-0.5 text-xs text-gray-400">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {formatTimestamp(notification.createdAt)}
                   </p>
                 </div>
                 {!notification.read && (
                   <span
-                    className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-indigo-500"
+                    className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-primary"
                     aria-label="Unread"
                   />
                 )}

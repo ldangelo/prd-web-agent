@@ -51,11 +51,11 @@ export function SearchBar({
         className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"
         data-testid="search-icon"
       >
-        <Search className="h-4 w-4 text-gray-400" aria-hidden="true" />
+        <Search className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
       </div>
       <input
         type="text"
-        className="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm text-gray-700 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        className="block w-full rounded-lg border border-input bg-background py-2 pl-10 pr-3 text-sm text-foreground placeholder-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
         placeholder={placeholder}
         value={value}
         onChange={handleChange}

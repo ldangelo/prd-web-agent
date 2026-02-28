@@ -24,13 +24,13 @@ export function NotificationDropdown({
   };
 
   return (
-    <div className="w-80 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-        <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+    <div className="w-80 overflow-hidden rounded-lg border border-border bg-card shadow-lg">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
         <button
           type="button"
           onClick={onMarkAllRead}
-          className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+          className="text-xs font-medium text-primary hover:text-primary/80"
           aria-label="Mark all as read"
         >
           Mark all as read
@@ -38,11 +38,11 @@ export function NotificationDropdown({
       </div>
 
       {notifications.length === 0 ? (
-        <div className="px-4 py-6 text-center text-sm text-gray-400">
+        <div className="px-4 py-6 text-center text-sm text-muted-foreground">
           No notifications
         </div>
       ) : (
-        <ul className="max-h-96 divide-y divide-gray-100 overflow-y-auto">
+        <ul className="max-h-96 divide-y divide-border overflow-y-auto">
           {notifications.map((notification) => (
             <NotificationItem
               key={notification.id}

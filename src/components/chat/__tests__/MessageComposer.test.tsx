@@ -58,4 +58,11 @@ describe("MessageComposer", () => {
     expect(fileInput).toBeInTheDocument();
     expect(fileInput).toHaveAttribute("accept", "image/*");
   });
+
+  it("textarea has an accessible label", () => {
+    render(<MessageComposer onSend={jest.fn()} disabled={false} />);
+
+    const textarea = screen.getByRole("textbox", { name: /message/i });
+    expect(textarea).toBeInTheDocument();
+  });
 });

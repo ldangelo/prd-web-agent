@@ -3,6 +3,14 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SubmissionProgress } from "./SubmissionProgress";
 import type { SubmissionStep } from "@/types/submission";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export interface SubmissionModalProps {
   /** The PRD ID to submit */
@@ -111,35 +119,47 @@ export function SubmissionModal({
     [prdId, pollStatus],
   );
 
-  if (!isOpen) {
-    return null;
-  }
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open && isTerminal) {
+        onClose();
+      }
+    },
+    [isTerminal, onClose],
+  );
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Submitting PRD"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-    >
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Submitting PRD
-          </h2>
-          <button
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="sm:max-w-md"
+        onPointerDownOutside={(e) => {
+          if (!isTerminal) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (!isTerminal) e.preventDefault();
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>Submitting PRD</DialogTitle>
+          <DialogDescription>
+            Creating a GitHub pull request for your PRD submission.
+          </DialogDescription>
+        </DialogHeader>
+
+        <SubmissionProgress steps={steps} onRetry={handleRetry} />
+
+        <div className="flex justify-end">
+          <Button
             type="button"
+            variant="outline"
             onClick={onClose}
             disabled={!isTerminal}
-            className="rounded px-3 py-1 text-sm font-medium text-gray-600 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close"
           >
             Close
-          </button>
+          </Button>
         </div>
-
-        <SubmissionProgress steps={steps} onRetry={handleRetry} />
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -57,7 +57,7 @@ export function CommentsList({ prdId }: CommentsListProps) {
 
   if (loading) {
     return (
-      <div className="py-4 text-center text-sm text-gray-500">
+      <div className="py-4 text-center text-sm text-muted-foreground">
         Loading comments...
       </div>
     );
@@ -71,7 +71,7 @@ export function CommentsList({ prdId }: CommentsListProps) {
       />
 
       {comments.length === 0 ? (
-        <p className="py-4 text-center text-sm text-gray-400">
+        <p className="py-4 text-center text-sm text-muted-foreground">
           No comments yet
         </p>
       ) : (

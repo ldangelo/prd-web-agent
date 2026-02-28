@@ -63,6 +63,38 @@ describe("NotificationBell", () => {
     });
   });
 
+  it("provides screen reader text for unread count", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        count: 3,
+        notifications: [],
+      }),
+    });
+
+    render(<NotificationBell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("3 unread notifications")).toBeInTheDocument();
+    });
+  });
+
+  it("uses singular form for single unread notification", async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        count: 1,
+        notifications: [],
+      }),
+    });
+
+    render(<NotificationBell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("1 unread notification")).toBeInTheDocument();
+    });
+  });
+
   it("opens dropdown on click and shows notifications", async () => {
     const user = userEvent.setup();
     (global.fetch as jest.Mock).mockResolvedValue({

@@ -85,7 +85,7 @@ export function TagEditor({
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Add tag..."
-        className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="rounded-md border border-input px-2 py-1 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
       />
     </div>
   );

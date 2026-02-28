@@ -57,4 +57,38 @@ describe("ProjectCard", () => {
     const card = screen.getByRole("article");
     expect(card).toHaveAttribute("tabIndex", "0");
   });
+
+  it("navigates on Enter key press", async () => {
+    const user = userEvent.setup();
+    render(<ProjectCard {...defaultProps} />);
+
+    const card = screen.getByRole("article");
+    card.focus();
+    await user.keyboard("{Enter}");
+
+    expect(mockPush).toHaveBeenCalledWith("/projects/proj_001");
+  });
+
+  it("navigates on Space key press", async () => {
+    const user = userEvent.setup();
+    render(<ProjectCard {...defaultProps} />);
+
+    const card = screen.getByRole("article");
+    card.focus();
+    await user.keyboard(" ");
+
+    expect(mockPush).toHaveBeenCalledWith("/projects/proj_001");
+  });
+
+  it("has aria-label with project name", () => {
+    render(<ProjectCard {...defaultProps} />);
+    const card = screen.getByRole("article");
+    expect(card).toHaveAttribute("aria-label", "Project: E-Commerce Platform");
+  });
+
+  it("hides decorative icon from screen readers", () => {
+    render(<ProjectCard {...defaultProps} />);
+    const icon = document.querySelector("[aria-hidden='true']");
+    expect(icon).toBeInTheDocument();
+  });
 });

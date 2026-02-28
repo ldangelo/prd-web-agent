@@ -66,7 +66,7 @@ export function TableOfContents({ content }: TableOfContentsProps) {
 
   return (
     <nav aria-label="Table of contents" className="sticky top-4">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Table of Contents
       </h2>
       <ul className="space-y-1">
@@ -77,7 +77,7 @@ export function TableOfContents({ content }: TableOfContentsProps) {
           >
             <a
               href={`#${heading.slug}`}
-              className="block text-sm text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+              className="block text-sm text-muted-foreground hover:text-primary"
               onClick={(e) => {
                 e.preventDefault();
                 const el = document.getElementById(heading.slug);

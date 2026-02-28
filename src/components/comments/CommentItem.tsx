@@ -34,7 +34,7 @@ export function CommentItem({ comment, onResolve, showResolve }: CommentItemProp
   return (
     <div className="flex gap-3 py-3">
       <div
-        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700"
+        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground"
         aria-hidden="true"
       >
         {getInitials(comment.authorName)}
@@ -42,15 +42,15 @@ export function CommentItem({ comment, onResolve, showResolve }: CommentItemProp
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-900">
+          <span className="text-sm font-medium text-foreground">
             {comment.authorName}
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-muted-foreground">
             {formatTimestamp(comment.createdAt)}
           </span>
         </div>
 
-        <p className="mt-1 text-sm text-gray-700">{comment.body}</p>
+        <p className="mt-1 text-sm text-foreground">{comment.body}</p>
 
         {showResolve && (
           <button
@@ -59,7 +59,7 @@ export function CommentItem({ comment, onResolve, showResolve }: CommentItemProp
             className={`mt-1 inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${
               comment.resolved
                 ? "bg-green-100 text-green-700 hover:bg-green-200"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             }`}
             aria-label={comment.resolved ? "Unresolve comment" : "Resolve comment"}
           >

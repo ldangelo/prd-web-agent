@@ -45,8 +45,8 @@ export function NotificationItem({
   return (
     <li
       data-unread={String(!notification.read)}
-      className={`cursor-pointer px-4 py-3 transition-colors hover:bg-gray-50 ${
-        !notification.read ? "bg-indigo-50" : ""
+      className={`cursor-pointer px-4 py-3 transition-colors hover:bg-muted ${
+        !notification.read ? "bg-accent" : ""
       }`}
       onClick={handleClick}
       role="listitem"
@@ -59,19 +59,19 @@ export function NotificationItem({
           <p
             className={`text-sm ${
               !notification.read
-                ? "font-medium text-gray-900"
-                : "text-gray-600"
+                ? "font-medium text-foreground"
+                : "text-muted-foreground"
             }`}
           >
             {notification.message}
           </p>
-          <p className="mt-0.5 text-xs text-gray-400">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {formatTimestamp(notification.createdAt)}
           </p>
         </div>
         {!notification.read && (
           <span
-            className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-indigo-500"
+            className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-primary"
             aria-label="Unread"
           />
         )}

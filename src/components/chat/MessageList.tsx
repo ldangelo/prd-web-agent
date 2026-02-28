@@ -20,7 +20,7 @@ export function MessageList({ messages }: MessageListProps) {
 
   if (messages.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center text-gray-400">
+      <div className="flex flex-1 items-center justify-center text-muted-foreground">
         <p>No messages yet. Start the conversation below.</p>
       </div>
     );
@@ -36,14 +36,14 @@ export function MessageList({ messages }: MessageListProps) {
             msg.role === "user" ? "self-end items-end" : "self-start items-start"
           }`}
         >
-          <span className="text-xs font-medium text-gray-500">
+          <span className="text-xs font-medium text-muted-foreground">
             {msg.role === "user" ? "You" : "Agent"}
           </span>
           <div
             className={`rounded-lg px-4 py-2 ${
               msg.role === "user"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-900"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-foreground"
             }`}
           >
             <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -61,7 +61,7 @@ export function MessageList({ messages }: MessageListProps) {
             )}
           </div>
           <time
-            className="text-xs text-gray-400"
+            className="text-xs text-muted-foreground"
             dateTime={msg.timestamp.toISOString()}
           >
             {formatTimestamp(msg.timestamp)}

@@ -6,6 +6,10 @@
  */
 "use client";
 
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -27,6 +31,16 @@ interface FilterBarProps {
 }
 
 // ---------------------------------------------------------------------------
+// Shared native select styles (consistent with shadcn Input styling)
+// ---------------------------------------------------------------------------
+
+const selectClassName = cn(
+  "flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+  "disabled:cursor-not-allowed disabled:opacity-50",
+);
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -44,18 +58,13 @@ export function FilterBar({
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-4 rounded-lg border border-gray-200 bg-white p-4">
+    <div className="flex flex-wrap items-end gap-4 rounded-lg border border-border bg-card p-4">
       {/* Project filter */}
-      <div className="flex flex-col">
-        <label
-          htmlFor="filter-project"
-          className="mb-1 text-xs font-medium text-gray-600"
-        >
-          Project
-        </label>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="filter-project">Project</Label>
         <select
           id="filter-project"
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className={selectClassName}
           value={filters.project || ""}
           onChange={(e) => handleChange("project", e.target.value)}
         >
@@ -69,16 +78,11 @@ export function FilterBar({
       </div>
 
       {/* Status filter */}
-      <div className="flex flex-col">
-        <label
-          htmlFor="filter-status"
-          className="mb-1 text-xs font-medium text-gray-600"
-        >
-          Status
-        </label>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="filter-status">Status</Label>
         <select
           id="filter-status"
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className={selectClassName}
           value={filters.status || ""}
           onChange={(e) => handleChange("status", e.target.value)}
         >
@@ -91,16 +95,11 @@ export function FilterBar({
       </div>
 
       {/* Author filter */}
-      <div className="flex flex-col">
-        <label
-          htmlFor="filter-author"
-          className="mb-1 text-xs font-medium text-gray-600"
-        >
-          Author
-        </label>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="filter-author">Author</Label>
         <select
           id="filter-author"
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className={selectClassName}
           value={filters.author || ""}
           onChange={(e) => handleChange("author", e.target.value)}
         >
@@ -114,51 +113,33 @@ export function FilterBar({
       </div>
 
       {/* Tags filter */}
-      <div className="flex flex-col">
-        <label
-          htmlFor="filter-tags"
-          className="mb-1 text-xs font-medium text-gray-600"
-        >
-          Tags
-        </label>
-        <input
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="filter-tags">Tags</Label>
+        <Input
           id="filter-tags"
           type="text"
           placeholder="e.g. auth,security"
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           value={filters.tags || ""}
           onChange={(e) => handleChange("tags", e.target.value)}
         />
       </div>
 
       {/* Date range */}
-      <div className="flex flex-col">
-        <label
-          htmlFor="filter-from"
-          className="mb-1 text-xs font-medium text-gray-600"
-        >
-          From
-        </label>
-        <input
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="filter-from">From</Label>
+        <Input
           id="filter-from"
           type="date"
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           value={filters.from || ""}
           onChange={(e) => handleChange("from", e.target.value)}
         />
       </div>
 
-      <div className="flex flex-col">
-        <label
-          htmlFor="filter-to"
-          className="mb-1 text-xs font-medium text-gray-600"
-        >
-          To
-        </label>
-        <input
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="filter-to">To</Label>
+        <Input
           id="filter-to"
           type="date"
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           value={filters.to || ""}
           onChange={(e) => handleChange("to", e.target.value)}
         />

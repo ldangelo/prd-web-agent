@@ -1,7 +1,8 @@
 /**
  * SubmissionModal component tests.
  *
- * Tests the single-step modal overlay for GitHub PR submission.
+ * Tests the single-step modal overlay for GitHub PR submission
+ * using shadcn Dialog (Radix UI).
  */
 import React from "react";
 import { render, screen, waitFor, act } from "@testing-library/react";
@@ -44,6 +45,22 @@ function setupFetchMock(statusSteps: SubmissionStep[]) {
   });
 }
 
+/**
+ * Helper to find the explicit Close button (not the Radix DialogClose X icon).
+ * The explicit Close button has aria-label="Close" and visible "Close" text.
+ */
+function getExplicitCloseButton(): HTMLElement {
+  const buttons = screen.getAllByRole("button", { name: /close/i });
+  // The explicit close button has visible "Close" text content (not sr-only)
+  const explicitClose = buttons.find(
+    (btn) => btn.textContent?.trim() === "Close" && btn.getAttribute("aria-label") === "Close"
+  );
+  if (!explicitClose) {
+    throw new Error("Could not find explicit Close button");
+  }
+  return explicitClose;
+}
+
 describe("SubmissionModal", () => {
   const defaultProps = {
     prdId: "prd_001",
@@ -78,14 +95,13 @@ describe("SubmissionModal", () => {
   it("shows close button", () => {
     render(<SubmissionModal {...defaultProps} />);
 
-    expect(screen.getByRole("button", { name: /close/i })).toBeInTheDocument();
+    expect(getExplicitCloseButton()).toBeInTheDocument();
   });
 
   it("close button is disabled while step is pending", () => {
     render(<SubmissionModal {...defaultProps} />);
 
-    const closeButton = screen.getByRole("button", { name: /close/i });
-    expect(closeButton).toBeDisabled();
+    expect(getExplicitCloseButton()).toBeDisabled();
   });
 
   it("close button is enabled when step is success", async () => {
@@ -100,8 +116,7 @@ describe("SubmissionModal", () => {
       await Promise.resolve();
     });
 
-    const closeButton = screen.getByRole("button", { name: /close/i });
-    expect(closeButton).not.toBeDisabled();
+    expect(getExplicitCloseButton()).not.toBeDisabled();
   });
 
   it("close button is enabled when step is failed", async () => {
@@ -116,8 +131,7 @@ describe("SubmissionModal", () => {
       await Promise.resolve();
     });
 
-    const closeButton = screen.getByRole("button", { name: /close/i });
-    expect(closeButton).not.toBeDisabled();
+    expect(getExplicitCloseButton()).not.toBeDisabled();
   });
 
   it("POSTs to submit endpoint when opened", async () => {
@@ -142,12 +156,10 @@ describe("SubmissionModal", () => {
     render(<SubmissionModal {...defaultProps} />);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: /close/i }),
-      ).not.toBeDisabled();
+      expect(getExplicitCloseButton()).not.toBeDisabled();
     });
 
-    await user.click(screen.getByRole("button", { name: /close/i }));
+    await user.click(getExplicitCloseButton());
     expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -163,5 +175,13 @@ describe("SubmissionModal", () => {
     expect(screen.queryByText("Confluence")).not.toBeInTheDocument();
     expect(screen.queryByText("Jira")).not.toBeInTheDocument();
     expect(screen.queryByText("Beads")).not.toBeInTheDocument();
+  });
+
+  it("has a dialog description for screen readers", () => {
+    render(<SubmissionModal {...defaultProps} />);
+
+    expect(
+      screen.getByText(/creating a github pull request/i),
+    ).toBeInTheDocument();
   });
 });

@@ -8,44 +8,46 @@ import { RepoPicker } from "../RepoPicker";
 // ---------------------------------------------------------------------------
 
 const mockReposResponse = {
-  repos: [
-    {
-      fullName: "octocat/hello-world",
-      name: "hello-world",
-      owner: "octocat",
-      ownerType: "User",
-      description: "My first repository",
-      private: false,
-      defaultBranch: "main",
-    },
-    {
-      fullName: "octocat/spoon-knife",
-      name: "spoon-knife",
-      owner: "octocat",
-      ownerType: "User",
-      description: "A fork of the classic",
-      private: false,
-      defaultBranch: "main",
-    },
-    {
-      fullName: "acme-org/web-app",
-      name: "web-app",
-      owner: "acme-org",
-      ownerType: "Organization",
-      description: "Main web application",
-      private: true,
-      defaultBranch: "main",
-    },
-    {
-      fullName: "acme-org/api-server",
-      name: "api-server",
-      owner: "acme-org",
-      ownerType: "Organization",
-      description: "Backend API server",
-      private: true,
-      defaultBranch: "main",
-    },
-  ],
+  data: {
+    repos: [
+      {
+        owner: "octocat",
+        ownerType: "user",
+        repos: [
+          {
+            fullName: "octocat/hello-world",
+            name: "hello-world",
+            description: "My first repository",
+            private: false,
+          },
+          {
+            fullName: "octocat/spoon-knife",
+            name: "spoon-knife",
+            description: "A fork of the classic",
+            private: false,
+          },
+        ],
+      },
+      {
+        owner: "acme-org",
+        ownerType: "organization",
+        repos: [
+          {
+            fullName: "acme-org/web-app",
+            name: "web-app",
+            description: "Main web application",
+            private: true,
+          },
+          {
+            fullName: "acme-org/api-server",
+            name: "api-server",
+            description: "Backend API server",
+            private: true,
+          },
+        ],
+      },
+    ],
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -316,5 +318,61 @@ describe("RepoPicker", () => {
 
     expect(screen.getByText("My first repository")).toBeInTheDocument();
     expect(screen.getByText("Main web application")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Accessibility tests
+  // ---------------------------------------------------------------------------
+
+  it("should have aria-busy on loading state", () => {
+    global.fetch = jest.fn().mockReturnValue(new Promise(() => {}));
+
+    const { container } = render(<RepoPicker onChange={mockOnChange} />);
+
+    const loadingDiv = container.querySelector("[aria-busy='true']");
+    expect(loadingDiv).toBeInTheDocument();
+  });
+
+  it("should have role=alert on error state", async () => {
+    mockFetchError(500);
+
+    render(<RepoPicker onChange={mockOnChange} />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("should have aria-label on search input", async () => {
+    mockFetchSuccess();
+
+    render(<RepoPicker onChange={mockOnChange} />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const searchInput = screen.getByRole("textbox", { name: /search repositories/i });
+    expect(searchInput).toBeInTheDocument();
+  });
+
+  it("repo options should have role=option and be keyboard accessible", async () => {
+    mockFetchSuccess();
+
+    render(<RepoPicker onChange={mockOnChange} />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const options = screen.getAllByRole("option");
+    expect(options.length).toBeGreaterThan(0);
+
+    // Each option should have tabIndex for keyboard access
+    options.forEach((option) => {
+      expect(option).toHaveAttribute("tabindex", "0");
+    });
   });
 });

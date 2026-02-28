@@ -3,6 +3,10 @@
 import React, { useState, useCallback } from "react";
 import { RepoPicker } from "./RepoPicker";
 import type { RepoSelection } from "./RepoPicker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 export interface ProjectFormData {
   name: string;
@@ -90,55 +94,38 @@ export function ProjectForm({ initialData, onSubmit, isLoading }: ProjectFormPro
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label
-          htmlFor="project-name"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Name
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="project-name">Name</Label>
+        <Input
           id="project-name"
           name="name"
           type="text"
           required
           value={formData.name}
           onChange={handleChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
 
-      <div>
-        <label
-          htmlFor="project-description"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Description
-        </label>
-        <textarea
+      <div className="space-y-2">
+        <Label htmlFor="project-description">Description</Label>
+        <Textarea
           id="project-description"
           name="description"
           rows={3}
           value={formData.description}
           onChange={handleChange}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
 
-      <fieldset className="rounded-md border border-gray-200 p-4">
-        <legend className="px-2 text-sm font-medium text-gray-700">
+      <fieldset className="rounded-md border border-border p-4">
+        <legend className="px-2 text-sm font-medium text-muted-foreground">
           GitHub Settings
         </legend>
 
         <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="project-githubRepo"
-              className="block text-sm font-medium text-gray-700"
-            >
-              GitHub Repository
-            </label>
-            <div className="mt-1">
+          <div className="space-y-2">
+            <Label htmlFor="project-githubRepo">GitHub Repository</Label>
+            <div>
               <RepoPicker
                 value={formData.githubRepo || undefined}
                 onChange={handleRepoChange}
@@ -147,44 +134,32 @@ export function ProjectForm({ initialData, onSubmit, isLoading }: ProjectFormPro
             </div>
           </div>
 
-          <div>
-            <label
-              htmlFor="project-defaultLabels"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Default Labels
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="project-defaultLabels">Default Labels</Label>
+            <Input
               id="project-defaultLabels"
               name="defaultLabels"
               type="text"
               placeholder="bug, enhancement, prd"
               value={labelsInput}
               onChange={handleLabelsChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Comma-separated list of labels
             </p>
           </div>
 
-          <div>
-            <label
-              htmlFor="project-defaultReviewers"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Default Reviewers
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="project-defaultReviewers">Default Reviewers</Label>
+            <Input
               id="project-defaultReviewers"
               name="defaultReviewers"
               type="text"
               placeholder="user1, user2"
               value={reviewersInput}
               onChange={handleReviewersChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Comma-separated list of GitHub usernames
             </p>
           </div>
@@ -192,13 +167,9 @@ export function ProjectForm({ initialData, onSubmit, isLoading }: ProjectFormPro
       </fieldset>
 
       <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isLoading}>
           {isLoading ? "Saving..." : "Save"}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,6 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 export interface TransitionButtonsProps {
   currentStatus: string;
@@ -47,13 +60,10 @@ const transitionMap: Record<string, TransitionOption[]> = {
   ],
 };
 
-const variantStyles: Record<string, string> = {
-  primary:
-    "bg-indigo-600 text-white hover:bg-indigo-500",
-  danger:
-    "bg-red-600 text-white hover:bg-red-500",
-  success:
-    "bg-green-600 text-white hover:bg-green-500",
+const variantMap: Record<string, "default" | "destructive" | "outline"> = {
+  primary: "default",
+  danger: "destructive",
+  success: "default",
 };
 
 export function TransitionButtons({
@@ -88,73 +98,68 @@ export function TransitionButtons({
   return (
     <div className="flex gap-2">
       {transitions.map((transition) => (
-        <button
+        <Button
           key={transition.toStatus}
           type="button"
+          variant={variantMap[transition.variant]}
+          size="sm"
           onClick={() => setPendingTransition(transition)}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium shadow-sm ${
-            variantStyles[transition.variant]
-          }`}
+          className={
+            transition.variant === "success"
+              ? "bg-green-600 text-white hover:bg-green-500"
+              : undefined
+          }
         >
           {transition.label}
-        </button>
+        </Button>
       ))}
 
-      {pendingTransition && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirm transition"
-        >
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <p className="text-sm text-gray-700">
+      <AlertDialog
+        open={!!pendingTransition}
+        onOpenChange={(open) => {
+          if (!open) handleCancel();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm transition</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to change the status to{" "}
-              <strong>{pendingTransition.toStatus}</strong>?
-            </p>
+              <strong>{pendingTransition?.toStatus}</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-            {pendingTransition.requiresComment && (
-              <div className="mt-4">
-                <label
-                  htmlFor="transition-comment"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Comment (required)
-                </label>
-                <textarea
-                  id="transition-comment"
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  rows={3}
-                  aria-label="Rejection comment"
-                />
-              </div>
-            )}
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={
-                  pendingTransition.requiresComment && comment.trim() === ""
-                }
-                className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
-                aria-label="Confirm transition"
-              >
-                Confirm
-              </button>
+          {pendingTransition?.requiresComment && (
+            <div className="space-y-2">
+              <Label htmlFor="transition-comment">Comment (required)</Label>
+              <Textarea
+                id="transition-comment"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={3}
+                aria-label="Rejection comment"
+              />
             </div>
-          </div>
-        </div>
-      )}
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancel}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
+              disabled={
+                pendingTransition?.requiresComment
+                  ? comment.trim() === ""
+                  : false
+              }
+              aria-label="Confirm transition"
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

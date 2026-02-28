@@ -151,4 +151,67 @@ describe("PrdListItem", () => {
 
     expect(screen.getByText("User Authentication Flow")).toBeInTheDocument();
   });
+
+  // ---------------------------------------------------------------------------
+  // Accessibility tests
+  // ---------------------------------------------------------------------------
+
+  it("should be keyboard accessible with tabIndex", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={basePrd} />
+        </tbody>
+      </table>,
+    );
+
+    const row = screen.getByText("User Authentication Flow").closest("tr");
+    expect(row).toHaveAttribute("tabindex", "0");
+  });
+
+  it("should navigate on Enter key press", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={basePrd} />
+        </tbody>
+      </table>,
+    );
+
+    const row = screen.getByText("User Authentication Flow").closest("tr")!;
+    fireEvent.keyDown(row, { key: "Enter" });
+
+    expect(mockPush).toHaveBeenCalledWith("/prd/prd_001");
+  });
+
+  it("should navigate on Space key press", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={basePrd} />
+        </tbody>
+      </table>,
+    );
+
+    const row = screen.getByText("User Authentication Flow").closest("tr")!;
+    fireEvent.keyDown(row, { key: " " });
+
+    expect(mockPush).toHaveBeenCalledWith("/prd/prd_001");
+  });
+
+  it("should have an aria-label with title and status", () => {
+    render(
+      <table>
+        <tbody>
+          <PrdListItem prd={basePrd} />
+        </tbody>
+      </table>,
+    );
+
+    const row = screen.getByText("User Authentication Flow").closest("tr");
+    expect(row).toHaveAttribute(
+      "aria-label",
+      "User Authentication Flow - Draft",
+    );
+  });
 });

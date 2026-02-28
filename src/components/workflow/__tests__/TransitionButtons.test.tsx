@@ -90,7 +90,7 @@ describe("TransitionButtons", () => {
 
     await user.click(screen.getByRole("button", { name: /reject/i }));
 
-    const dialog = screen.getByRole("dialog");
+    const dialog = screen.getByRole("alertdialog");
     const commentInput = within(dialog).getByRole("textbox");
     expect(commentInput).toBeInTheDocument();
 

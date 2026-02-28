@@ -51,9 +51,26 @@ export function RepoPicker({ value, onChange, disabled }: RepoPickerProps) {
         if (!response.ok) {
           throw new Error("Failed to load repositories");
         }
-        const data = await response.json();
+        const json = await response.json();
         if (!cancelled) {
-          setRepos(data.repos);
+          // API returns { data: { repos: [{ owner, ownerType, repos: [...] }] } }
+          // Flatten grouped repos into a flat array with owner info
+          const groups = json.data?.repos ?? [];
+          const flat: GitHubRepo[] = [];
+          for (const group of groups) {
+            for (const repo of group.repos) {
+              flat.push({
+                fullName: repo.fullName,
+                name: repo.name,
+                owner: group.owner,
+                ownerType: group.ownerType === "user" ? "User" : "Organization",
+                description: repo.description,
+                private: repo.private,
+                defaultBranch: repo.defaultBranch ?? "main",
+              });
+            }
+          }
+          setRepos(flat);
           setIsLoading(false);
         }
       } catch {
@@ -136,7 +153,7 @@ export function RepoPicker({ value, onChange, disabled }: RepoPickerProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="rounded-md border border-input p-4">
+      <div className="rounded-md border border-input p-4" aria-busy="true">
         <p className="text-sm text-muted-foreground">Loading repositories...</p>
       </div>
     );
@@ -145,7 +162,7 @@ export function RepoPicker({ value, onChange, disabled }: RepoPickerProps) {
   // Error state
   if (error) {
     return (
-      <div className="rounded-md border border-red-300 bg-red-50 p-4">
+      <div className="rounded-md border border-red-300 bg-red-50 p-4" role="alert">
         <p className="text-sm text-red-600">{error}</p>
       </div>
     );
@@ -177,6 +194,7 @@ export function RepoPicker({ value, onChange, disabled }: RepoPickerProps) {
         value={searchTerm}
         onChange={handleSearchChange}
         disabled={disabled}
+        aria-label="Search repositories"
         className="block w-full rounded-md border border-input px-3 py-2 text-sm shadow-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       />
 

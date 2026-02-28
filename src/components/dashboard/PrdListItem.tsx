@@ -71,16 +71,25 @@ export function PrdListItem({ prd }: { prd: PrdListItemData }) {
 
   return (
     <tr
-      className="cursor-pointer border-b border-gray-200 hover:bg-gray-50 transition-colors"
+      className="cursor-pointer border-b border-border hover:bg-muted transition-colors"
       onClick={() => router.push(`/prd/${prd.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(`/prd/${prd.id}`);
+        }
+      }}
+      tabIndex={0}
+      role="row"
+      aria-label={`${prd.title} - ${STATUS_CONFIG[prd.status].label}`}
     >
-      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+      <td className="px-4 py-3 text-sm font-medium text-foreground">
         {prd.title}
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600">
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {prd.project.name}
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600">
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {prd.author.name}
       </td>
       <td className="px-4 py-3">
@@ -97,10 +106,10 @@ export function PrdListItem({ prd }: { prd: PrdListItemData }) {
           ))}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500">
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {formattedDate}
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500">
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         v{prd.currentVersion}
       </td>
     </tr>

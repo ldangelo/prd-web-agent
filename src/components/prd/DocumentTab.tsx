@@ -17,7 +17,7 @@ export interface DocumentTabProps {
 export function DocumentTab({ content }: DocumentTabProps) {
   if (!content) {
     return (
-      <p className="text-gray-500">No document content available.</p>
+      <p className="text-muted-foreground">No document content available.</p>
     );
   }
 
