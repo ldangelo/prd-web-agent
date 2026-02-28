@@ -41,8 +41,20 @@ export interface AgentSessionEvent {
     | "message_end"
     | "tool_start"
     | "tool_end"
-    | "error";
+    | "error"
+    // Real SDK event types (mapped internally)
+    | "message_update"
+    | "tool_execution_start"
+    | "tool_execution_end"
+    | "agent_end"
+    | "turn_end";
   data?: unknown;
+  /** Present on message_update events from the real SDK */
+  assistantMessageEvent?: { type: string; delta?: string };
+  /** Tool name for tool_execution_start/end events */
+  toolName?: string;
+  /** Whether the tool execution resulted in an error */
+  isError?: boolean;
 }
 
 export interface AgentSession {
