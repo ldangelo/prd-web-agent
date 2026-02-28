@@ -7,7 +7,10 @@
 
 import type { AgentSession, AgentSessionEvent } from "@/types/pi-sdk";
 import { createAgentSession } from "@/types/pi-sdk";
+import { createPiSession, isPiSdkAvailable } from "./pi-sdk-init";
 import { createResourceLoader } from "./resource-loader";
+import { buildSystemPrompt } from "./system-prompt";
+import { createAgentTools } from "./tools";
 import { findSessionFile } from "./session-persistence";
 import { getLlmConfig } from "@/services/llm-config-service";
 import type { LlmConfig } from "@/services/llm-config-service";
@@ -34,6 +37,7 @@ export interface CreateSessionOpts {
   prdId?: string;
   prdContent?: string;
   description?: string;
+  workingDir?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,18 +61,36 @@ export class AgentSessionManager {
    * Create a new agent session.
    */
   async createSession(opts: CreateSessionOpts): Promise<{ sessionId: string }> {
-    const [resourceLoader, llmConfig] = await Promise.all([
-      Promise.resolve(
-        createResourceLoader({
-          mode: opts.mode,
-          prdContent: opts.prdContent,
-          projectDescription: opts.description,
-        }),
-      ),
-      getLlmConfig(),
-    ]);
+    const llmConfig = await getLlmConfig();
 
-    const session = await createAgentSession({ resourceLoader });
+    // Try to use the real Pi SDK first
+    let session: AgentSession | null = null;
+
+    if (await isPiSdkAvailable()) {
+      const systemPrompt = buildSystemPrompt({
+        mode: opts.mode,
+        prdContent: opts.prdContent,
+        projectDescription: opts.description,
+      });
+      const customTools = createAgentTools(opts.userId, opts.projectId, opts.prdId);
+
+      session = await createPiSession({
+        llmConfig,
+        customTools,
+        systemPrompt,
+        workingDir: opts.workingDir,
+      });
+    }
+
+    // Fall back to the stub factory
+    if (!session) {
+      const resourceLoader = createResourceLoader({
+        mode: opts.mode,
+        prdContent: opts.prdContent,
+        projectDescription: opts.description,
+      });
+      session = await createAgentSession({ resourceLoader });
+    }
 
     const managed: ManagedSession = {
       session,
