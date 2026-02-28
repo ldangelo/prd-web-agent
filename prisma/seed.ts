@@ -41,8 +41,12 @@ export async function seed(client: PrismaClient = prisma): Promise<void> {
   console.log("Seeded GlobalSettings with defaults");
 }
 
-// Run when executed directly (not imported)
-if (require.main === module) {
+// Run when executed directly (not when imported in tests)
+const isDirectExecution =
+  typeof process.env.JEST_WORKER_ID === "undefined" &&
+  typeof process.env.NODE_ENV !== "undefined";
+
+if (isDirectExecution) {
   seed()
     .then(() => prisma.$disconnect())
     .catch(async (e) => {

@@ -72,7 +72,7 @@ export default function NewPrdPage() {
   return (
     <main className="mx-auto max-w-2xl p-8">
       <h1 className="text-2xl font-bold">New PRD</h1>
-      <p className="mt-2 text-gray-600">
+      <p className="mt-2 text-muted-foreground">
         Create a new PRD with AI-assisted authoring.
       </p>
 
@@ -85,7 +85,7 @@ export default function NewPrdPage() {
             id="project-select"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
-            className="mt-1 block w-full rounded border border-gray-300 p-2"
+            className="mt-1 block w-full rounded border border-input p-2"
           >
             <option value="">Select a project...</option>
             {projects.map((p) => (
@@ -106,7 +106,7 @@ export default function NewPrdPage() {
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
             placeholder="Briefly describe what this PRD should cover..."
-            className="mt-1 block w-full rounded border border-gray-300 p-2"
+            className="mt-1 block w-full rounded border border-input p-2"
           />
         </div>
 
@@ -119,7 +119,7 @@ export default function NewPrdPage() {
         <button
           onClick={handleStart}
           disabled={isSubmitting}
-          className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           {isSubmitting ? "Creating..." : "Start"}
         </button>

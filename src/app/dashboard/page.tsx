@@ -194,8 +194,8 @@ export default function DashboardPage() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">PRD Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">PRD Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Browse, filter, and search product requirement documents.
         </p>
       </div>
@@ -224,7 +224,7 @@ export default function DashboardPage() {
 
       {/* Loading state */}
       {loading && (
-        <div className="py-12 text-center text-sm text-gray-500">
+        <div className="py-12 text-center text-sm text-muted-foreground">
           Loading PRDs...
         </div>
       )}
@@ -232,7 +232,7 @@ export default function DashboardPage() {
       {/* Empty state */}
       {!loading && items.length === 0 && (
         <div className="py-12 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             No PRDs found. Create one to get started.
           </p>
         </div>
@@ -263,7 +263,7 @@ export default function DashboardPage() {
           {/* Pagination */}
           {pagination.totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
                 {Math.min(
                   pagination.page * pagination.limit,
@@ -273,14 +273,14 @@ export default function DashboardPage() {
               </p>
               <div className="flex gap-2">
                 <button
-                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-50"
                   disabled={pagination.page <= 1}
                   onClick={() => handlePageChange(pagination.page - 1)}
                 >
                   Previous
                 </button>
                 <button
-                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-50"
                   disabled={pagination.page >= pagination.totalPages}
                   onClick={() => handlePageChange(pagination.page + 1)}
                 >

@@ -151,17 +151,17 @@
 
 ### Sprint 9: shadcn/ui Component Library Adoption (Weeks 17–18)
 
-- [ ] **TASK-079:** Initialize shadcn/ui — run `npx shadcn init`, configure `components.json`, create `cn()` utility in `src/lib/utils.ts`, set up CSS variables in `globals.css`, update `tailwind.config.ts`
-- [ ] **TASK-080:** Install core shadcn/ui components — Button, Input, Textarea, Select, Label, Badge, Card, Dialog, AlertDialog, DropdownMenu, Table, Sheet, Separator, Form
-- [ ] **TASK-081:** Install `lucide-react` and replace all inline SVG icons across all components
-- [ ] **TASK-082:** Migrate form components — refactor ProjectForm, FilterBar, CommentComposer, MessageComposer to use shadcn Input, Textarea, Label, Select, Button
-- [ ] **TASK-083:** Migrate dialog components — refactor SubmissionModal and TransitionButtons to use shadcn Dialog/AlertDialog
-- [ ] **TASK-084:** Migrate badge components — refactor StatusBadge, TagPill, PrdListItem to use shadcn Badge
-- [ ] **TASK-085:** Migrate navigation components — refactor NotificationBell dropdown to shadcn DropdownMenu; add Sheet for mobile nav
-- [ ] **TASK-086:** Migrate data display components — refactor Dashboard table to shadcn Table; refactor ProjectCard to shadcn Card
-- [ ] **TASK-087:** CSS variable theming — map existing colors to semantic tokens (`--primary`, `--destructive`, `--muted`, etc.); remove hardcoded Tailwind color classes
-- [ ] **TASK-088:** Verify all tests pass after migration — fix any test failures from changed markup/classnames
-- [ ] **TASK-089:** Accessibility audit — verify keyboard navigation, focus management, ARIA attributes on all migrated components
+- [x] **TASK-079:** Initialize shadcn/ui — run `npx shadcn init`, configure `components.json`, create `cn()` utility in `src/lib/utils.ts`, set up CSS variables in `globals.css`, update `tailwind.config.ts`
+- [x] **TASK-080:** Install core shadcn/ui components — Button, Input, Textarea, Select, Label, Badge, Card, Dialog, AlertDialog, DropdownMenu, Table, Sheet, Separator, Form
+- [x] **TASK-081:** Install `lucide-react` and replace all inline SVG icons across all components
+- [x] **TASK-082:** Migrate form components — refactor ProjectForm, FilterBar, CommentComposer, MessageComposer to use shadcn Input, Textarea, Label, Select, Button
+- [x] **TASK-083:** Migrate dialog components — refactor SubmissionModal and TransitionButtons to use shadcn Dialog/AlertDialog
+- [x] **TASK-084:** Migrate badge components — refactor StatusBadge, TagPill, PrdListItem to use shadcn Badge
+- [x] **TASK-085:** Migrate navigation components — refactor NotificationBell dropdown to shadcn DropdownMenu; add Sheet for mobile nav
+- [x] **TASK-086:** Migrate data display components — refactor Dashboard table to shadcn Table; refactor ProjectCard to shadcn Card
+- [x] **TASK-087:** CSS variable theming — map existing colors to semantic tokens (`--primary`, `--destructive`, `--muted`, etc.); remove hardcoded Tailwind color classes
+- [x] **TASK-088:** Verify all tests pass after migration — fix any test failures from changed markup/classnames
+- [x] **TASK-089:** Accessibility audit — verify keyboard navigation, focus management, ARIA attributes on all migrated components
 
 **Dependencies:** TASK-079 is prerequisite for all others. TASK-080 depends on TASK-079. TASK-081–TASK-087 depend on TASK-080. TASK-088 depends on TASK-081–TASK-087. TASK-089 depends on TASK-088.
 
