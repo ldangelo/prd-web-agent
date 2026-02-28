@@ -41,6 +41,7 @@ model User {
   notifications Notification[]
   auditEntries  AuditEntry[]
   projectMemberships ProjectMember[]
+  llmSettings   UserLlmSettings?
 }
 
 model Account {
@@ -205,4 +206,15 @@ model GlobalSettings {
   llmThinkingLevel String @default("medium")
   blockApprovalOnUnresolvedComments Boolean @default(true)
   updatedAt       DateTime @updatedAt
+}
+
+model UserLlmSettings {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider  String   @default("anthropic")
+  model     String   @default("claude-sonnet-4-20250514")
+  apiKey    String   // AES-256-GCM encrypted at app layer
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

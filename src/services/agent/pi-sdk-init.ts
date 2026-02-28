@@ -19,6 +19,8 @@ export interface CreatePiSessionOptions {
   customTools: ToolDefinition[];
   systemPrompt: string;
   workingDir?: string;
+  apiKey?: string;
+  providerForAuth?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,7 +114,17 @@ export async function createPiSession(
     return null;
   }
 
-  await ensureAuth();
+  // Configure auth: prefer per-session key, fall back to global
+  if (opts.apiKey && opts.providerForAuth) {
+    try {
+      const authStorage = new _AuthStorage();
+      authStorage.setRuntimeApiKey(opts.providerForAuth, opts.apiKey);
+    } catch (err) {
+      logger.warn({ err }, "Failed to configure per-session Pi SDK auth");
+    }
+  } else {
+    await ensureAuth();
+  }
 
   try {
     const sessionManager = _SessionManager.inMemory();

@@ -3,10 +3,11 @@
 // ---------------------------------------------------------------------------
 
 jest.mock("@/services/llm-config-service", () => ({
-  getLlmConfig: jest.fn().mockResolvedValue({
+  getUserLlmConfig: jest.fn().mockResolvedValue({
     provider: "anthropic",
     model: "claude-sonnet-4-20250514",
     thinkingLevel: "medium",
+    apiKey: "test-api-key",
   }),
 }));
 

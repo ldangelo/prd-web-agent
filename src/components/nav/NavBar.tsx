@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/projects", label: "Projects" },
   { href: "/prd/new", label: "New PRD" },
+  { href: "/settings", label: "Settings" },
 ];
 
 const ADMIN_LINK = { href: "/admin", label: "Admin" };

@@ -12,7 +12,7 @@ import { createResourceLoader } from "./resource-loader";
 import { buildSystemPrompt } from "./system-prompt";
 import { createAgentTools } from "./tools";
 import { findSessionFile } from "./session-persistence";
-import { getLlmConfig } from "@/services/llm-config-service";
+import { getUserLlmConfig } from "@/services/llm-config-service";
 import type { LlmConfig } from "@/services/llm-config-service";
 import logger from "@/lib/logger";
 
@@ -61,7 +61,12 @@ export class AgentSessionManager {
    * Create a new agent session.
    */
   async createSession(opts: CreateSessionOpts): Promise<{ sessionId: string }> {
-    const llmConfig = await getLlmConfig();
+    const userLlmConfig = await getUserLlmConfig(opts.userId);
+    const llmConfig: LlmConfig = {
+      provider: userLlmConfig.provider,
+      model: userLlmConfig.model,
+      thinkingLevel: userLlmConfig.thinkingLevel,
+    };
 
     // Try to use the real Pi SDK first
     let session: AgentSession | null = null;
@@ -79,6 +84,8 @@ export class AgentSessionManager {
         customTools,
         systemPrompt,
         workingDir: opts.workingDir,
+        apiKey: userLlmConfig.apiKey,
+        providerForAuth: userLlmConfig.provider,
       });
     }
 
