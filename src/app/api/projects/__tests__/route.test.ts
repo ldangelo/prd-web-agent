@@ -181,6 +181,11 @@ describe("POST /api/projects", () => {
         githubRepo: "org/full-repo",
         defaultLabels: ["bug", "enhancement"],
         defaultReviewers: ["reviewer1", "reviewer2"],
+        members: {
+          create: {
+            userId: "user_1",
+          },
+        },
       },
     });
   });

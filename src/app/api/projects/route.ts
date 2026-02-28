@@ -9,8 +9,9 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { apiSuccess } from "@/lib/api/response";
-import { handleApiError } from "@/lib/api/errors";
+import { handleApiError, ApiError } from "@/lib/api/errors";
 import { validateBody } from "@/lib/api/validate";
+import { Prisma } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Validation schemas
@@ -67,7 +68,7 @@ export async function GET(_request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth();
+    const session = await requireAuth();
 
     const data = await validateBody(CreateProjectSchema, request);
 
@@ -78,11 +79,24 @@ export async function POST(request: NextRequest) {
         githubRepo: data.githubRepo,
         defaultLabels: data.defaultLabels,
         defaultReviewers: data.defaultReviewers,
+        members: {
+          create: {
+            userId: session.user.id,
+          },
+        },
       },
     });
 
     return apiSuccess(project, 201);
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return handleApiError(
+        new ApiError("A project with this GitHub repository already exists", 409),
+      );
+    }
     return handleApiError(error);
   }
 }
