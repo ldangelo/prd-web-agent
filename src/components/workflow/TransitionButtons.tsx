@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,6 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
-  AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
 export interface TransitionButtonsProps {
@@ -72,6 +71,7 @@ export function TransitionButtons({
 }: TransitionButtonsProps) {
   const [pendingTransition, setPendingTransition] =
     useState<TransitionOption | null>(null);
+  const pendingRef = useRef<TransitionOption | null>(null);
   const [comment, setComment] = useState("");
 
   const transitions = transitionMap[currentStatus];
@@ -81,16 +81,20 @@ export function TransitionButtons({
   }
 
   const handleConfirm = () => {
-    if (!pendingTransition) return;
+    // Use ref to avoid race with Radix AlertDialog's onOpenChange clearing state
+    const transition = pendingRef.current;
+    if (!transition) return;
     onTransition(
-      pendingTransition.toStatus,
-      pendingTransition.requiresComment ? comment : undefined
+      transition.toStatus,
+      transition.requiresComment ? comment : undefined
     );
+    pendingRef.current = null;
     setPendingTransition(null);
     setComment("");
   };
 
   const handleCancel = () => {
+    pendingRef.current = null;
     setPendingTransition(null);
     setComment("");
   };
@@ -103,7 +107,10 @@ export function TransitionButtons({
           type="button"
           variant={variantMap[transition.variant]}
           size="sm"
-          onClick={() => setPendingTransition(transition)}
+          onClick={() => {
+            pendingRef.current = transition;
+            setPendingTransition(transition);
+          }}
           className={
             transition.variant === "success"
               ? "bg-green-600 text-white hover:bg-green-500"
@@ -117,7 +124,7 @@ export function TransitionButtons({
       <AlertDialog
         open={!!pendingTransition}
         onOpenChange={(open) => {
-          if (!open) handleCancel();
+          if (!open) setPendingTransition(null);
         }}
       >
         <AlertDialogContent>
@@ -146,7 +153,7 @@ export function TransitionButtons({
             <AlertDialogCancel onClick={handleCancel}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               onClick={handleConfirm}
               disabled={
                 pendingTransition?.requiresComment
@@ -156,7 +163,7 @@ export function TransitionButtons({
               aria-label="Confirm transition"
             >
               Confirm
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

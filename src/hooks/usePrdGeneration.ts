@@ -27,6 +27,7 @@ interface LatestVersionResponse {
     prd: {
       id: string;
       title: string;
+      status: string;
       generationStatus: string | null;
       generationError: string | null;
       currentVersion: number;
@@ -38,6 +39,7 @@ interface LatestVersionResponse {
 export interface UsePrdGenerationResult {
   content: string;
   title: string;
+  status: string;
   isGenerating: boolean;
   streamingText: string;
   error: string | null;
@@ -51,6 +53,7 @@ export interface UsePrdGenerationResult {
 export function usePrdGeneration(prdId: string): UsePrdGenerationResult {
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
+  const [status, setStatus] = useState("DRAFT");
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingText, setStreamingText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +71,7 @@ export function usePrdGeneration(prdId: string): UsePrdGenerationResult {
       const { prd, version } = json.data;
 
       setTitle(prd.title);
+      setStatus(prd.status);
 
       if (version) {
         setContent(version.content);
@@ -155,6 +159,7 @@ export function usePrdGeneration(prdId: string): UsePrdGenerationResult {
   return {
     content,
     title,
+    status,
     isGenerating,
     streamingText,
     error,

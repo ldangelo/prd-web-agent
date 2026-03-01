@@ -82,16 +82,22 @@ export function SubmissionModal({
     // Reset steps
     setSteps(INITIAL_STEPS);
 
-    // Start submission
+    // Start submission — the POST is synchronous and returns final step statuses
     fetch(`/api/prds/${prdId}/submit`, { method: "POST" })
-      .then(() => {
-        // Start polling
+      .then(async (res) => {
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data?.steps) {
+            setSteps(json.data.steps);
+            return; // Steps are already terminal, no need to poll
+          }
+        }
+        // Fallback to polling if response didn't include steps
         pollStatus();
         pollRef.current = setInterval(pollStatus, POLL_INTERVAL_MS);
       })
       .catch(() => {
-        // If POST fails, still try polling
-        pollStatus();
+        setSteps([{ name: "github", status: "failed", error: "Failed to start submission" }]);
       });
 
     return () => {
