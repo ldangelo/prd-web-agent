@@ -37,13 +37,15 @@ export function MessageList({ messages }: MessageListProps) {
           }`}
         >
           <span className="text-xs font-medium text-muted-foreground">
-            {msg.role === "user" ? "You" : "Agent"}
+            {msg.role === "user" ? "You" : msg.role === "system" ? "System" : "Agent"}
           </span>
           <div
             className={`rounded-lg px-4 py-2 ${
               msg.role === "user"
                 ? "bg-primary text-primary-foreground"
-                : "bg-muted text-foreground"
+                : msg.role === "system"
+                  ? "bg-blue-50 text-blue-900 border border-blue-200"
+                  : "bg-muted text-foreground"
             }`}
           >
             <p className="whitespace-pre-wrap">{msg.content}</p>

@@ -32,7 +32,7 @@ export default function PrdDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>(
     TABS.includes(initialTab as Tab) ? (initialTab as Tab) : "Document",
   );
-  const [isRefining, setIsRefining] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState<string | null>(null);
 
   const {
     content: documentContent,
@@ -47,21 +47,17 @@ export default function PrdDetailPage() {
     router.replace(`/prd/${prdId}?tab=${tab.toLowerCase()}`);
   }
 
-  async function handleRefine() {
-    setIsRefining(true);
-    try {
-      const res = await fetch(`/api/prds/${prdId}/refine`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        setActiveTab("Chat");
-        router.replace(`/prd/${prdId}?tab=chat`);
-      }
-    } catch {
-      // Handle error silently for now
-    } finally {
-      setIsRefining(false);
-    }
+  function handleRefine() {
+    setRefinePrompt(
+      `Please review this PRD and provide a structured analysis:\n\n` +
+      `1. **Completeness** — Are any standard sections missing or thin?\n` +
+      `2. **Clarity** — Are requirements specific and measurable?\n` +
+      `3. **Consistency** — Are there any contradictions or conflicts?\n` +
+      `4. **Feasibility** — Are there any unrealistic requirements?\n\n` +
+      `After your analysis, ask me which improvements I'd like to make.`,
+    );
+    setActiveTab("Chat");
+    router.replace(`/prd/${prdId}?tab=chat`);
   }
 
   return (
@@ -70,10 +66,10 @@ export default function PrdDetailPage() {
         <h1 className="text-2xl font-bold">PRD Detail</h1>
         <button
           onClick={handleRefine}
-          disabled={isRefining || isGenerating}
+          disabled={isGenerating}
           className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
         >
-          {isRefining ? "Loading..." : "Refine"}
+          Refine
         </button>
       </div>
 
@@ -149,7 +145,9 @@ export default function PrdDetailPage() {
               projectId=""
               userId=""
               mode="refine"
+              initialPrompt={refinePrompt ?? undefined}
               onPrdSaved={() => {
+                setRefinePrompt(null);
                 void refreshContent();
               }}
             />

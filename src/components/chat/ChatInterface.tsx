@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "@/types/chat";
 import { MessageList } from "./MessageList";
 import { StreamingMessage } from "./StreamingMessage";
@@ -12,12 +12,14 @@ interface ChatInterfaceProps {
   projectId: string;
   userId: string;
   mode?: "create" | "refine";
+  initialPrompt?: string;
   onPrdSaved?: (prdId: string, version: number) => void;
 }
 
 export function ChatInterface({
   prdId,
   mode = "refine",
+  initialPrompt,
   onPrdSaved,
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -29,17 +31,13 @@ export function ChatInterface({
   const sessionIdRef = useRef<string | null>(null);
   // Collect chunks in a ref so finalization doesn't depend on state updaters
   const chunksRef = useRef<string[]>([]);
+  // Track whether the initial prompt has been sent
+  const initialPromptSentRef = useRef(false);
 
-  const handleSend = useCallback(
-    async (text: string, _images?: File[]) => {
-      // Add user message to the list immediately
-      const userMessage: ChatMessage = {
-        id: `msg-${Date.now()}`,
-        role: "user",
-        content: text,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
+  // Core function that sends text to the agent API and streams the response.
+  // Does NOT add any user/system message — callers are responsible for that.
+  const sendToAgent = useCallback(
+    async (text: string) => {
       setError(null);
       setIsStreaming(true);
       setStreamingChunks([]);
@@ -119,6 +117,21 @@ export function ChatInterface({
     [prdId],
   );
 
+  // Called when the user types a message in the composer
+  const handleSend = useCallback(
+    async (text: string, _images?: File[]) => {
+      const userMessage: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: "user",
+        content: text,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      await sendToAgent(text);
+    },
+    [sendToAgent],
+  );
+
   function handleSSEEvent(event: string, data: any) {
     switch (event) {
       case "session":
@@ -136,6 +149,25 @@ export function ChatInterface({
         break;
     }
   }
+
+  // Auto-send initial prompt on mount (e.g. when Refine button is clicked)
+  useEffect(() => {
+    if (initialPrompt && !initialPromptSentRef.current && messages.length === 0) {
+      initialPromptSentRef.current = true;
+
+      // Add as a system message so it's clear this was auto-initiated
+      const systemMessage: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: "system",
+        content: initialPrompt,
+        timestamp: new Date(),
+      };
+      setMessages([systemMessage]);
+
+      // Fire the prompt to the agent (no duplicate user message)
+      void sendToAgent(initialPrompt);
+    }
+  }, [initialPrompt, messages.length, sendToAgent]);
 
   const handleRetry = useCallback(() => {
     setError(null);

@@ -27,6 +27,7 @@ const REFINE_MODE_INSTRUCTIONS = [
   "Preserve the original intent while enhancing quality.",
   "When the user asks you to add, change, or remove content from the PRD, output the COMPLETE updated PRD in Markdown — not just the changed sections.",
   "For questions or analysis that do NOT modify the PRD, reply conversationally without outputting the full document.",
+  "When asked to 'review' or 'analyze' the PRD, provide a structured analysis with numbered findings grouped by category (Completeness, Clarity, Consistency, Feasibility). After presenting your findings, ask the user which specific improvements they would like you to make before rewriting any content.",
 ];
 
 const CONSTRAINTS = [
