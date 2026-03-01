@@ -11,3 +11,5 @@ export {
   findSessionFile,
 } from "./session-persistence";
 export type { SessionInfo } from "./session-persistence";
+export { createOpenClawAgentSession } from "./openclaw-session";
+export type { OpenClawSessionOptions } from "./openclaw-session";

@@ -7,13 +7,13 @@
 
 import type { AgentSession, AgentSessionEvent } from "@/types/pi-sdk";
 import { createAgentSession } from "@/types/pi-sdk";
-import { createPiSession, isPiSdkAvailable } from "./pi-sdk-init";
 import { createResourceLoader } from "./resource-loader";
 import { buildSystemPrompt } from "./system-prompt";
-import { createAgentTools } from "./tools";
 import { findSessionFile } from "./session-persistence";
 import { getUserLlmConfig } from "@/services/llm-config-service";
 import type { LlmConfig } from "@/services/llm-config-service";
+import { OpenClawClient } from "@/services/openclaw";
+import { createOpenClawAgentSession } from "./openclaw-session";
 import logger from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
@@ -68,29 +68,25 @@ export class AgentSessionManager {
       thinkingLevel: userLlmConfig.thinkingLevel,
     };
 
-    // Try to use the real Pi SDK first
-    let session: AgentSession | null = null;
+    const systemPrompt = buildSystemPrompt({
+      mode: opts.mode,
+      prdContent: opts.prdContent,
+      projectDescription: opts.description,
+    });
 
-    if (await isPiSdkAvailable()) {
-      const systemPrompt = buildSystemPrompt({
-        mode: opts.mode,
-        prdContent: opts.prdContent,
-        projectDescription: opts.description,
-      });
-      const customTools = createAgentTools(opts.userId, opts.projectId, opts.prdId);
+    // Use OpenClaw Gateway if configured, otherwise fall back to stub
+    let session: AgentSession;
 
-      session = await createPiSession({
-        llmConfig,
-        customTools,
+    if (process.env.OPENCLAW_GATEWAY_URL && process.env.OPENCLAW_GATEWAY_TOKEN) {
+      const client = OpenClawClient.fromEnv();
+      const sessionKey = `${opts.userId}:${opts.prdId || opts.projectId}`;
+
+      session = createOpenClawAgentSession({
+        client,
         systemPrompt,
-        workingDir: opts.workingDir,
-        apiKey: userLlmConfig.apiKey,
-        providerForAuth: userLlmConfig.provider,
+        sessionKey,
       });
-    }
-
-    // Fall back to the stub factory
-    if (!session) {
+    } else {
       const resourceLoader = createResourceLoader({
         mode: opts.mode,
         prdContent: opts.prdContent,

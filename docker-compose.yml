@@ -31,6 +31,20 @@ services:
       timeout: 5s
       retries: 5
 
+  openclaw:
+    image: ghcr.io/phioranex/openclaw-docker:latest
+    container_name: prd-web-agent-openclaw
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${PI_SDK_API_KEY}
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+    volumes:
+      - ./openclaw/skills:/home/node/.openclaw/workspace/skills
+      - ./openclaw/config/openclaw.json:/home/node/.openclaw/openclaw.json
+    ports:
+      - "18789:18789"
+    command: ["gateway", "--port", "18789"]
+
 volumes:
   postgres_data:
   redis_data:

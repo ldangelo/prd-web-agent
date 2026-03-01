@@ -16,6 +16,7 @@ import { useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { DocumentTab } from "@/components/prd/DocumentTab";
 import { VersionHistory } from "@/components/prd/VersionHistory";
+import { ChatInterface } from "@/components/chat/ChatInterface";
 import { usePrdGeneration } from "@/hooks/usePrdGeneration";
 
 const TABS = ["Document", "Chat", "Comments", "History"] as const;
@@ -142,19 +143,16 @@ export default function PrdDetailPage() {
         )}
 
         {activeTab === "Chat" && (
-          <div>
-            <p className="text-muted-foreground">
-              Chat interface for agent interaction will load here.
-            </p>
-            {/* Session resume prompt placeholder */}
-            <div className="mt-4 rounded border border-yellow-200 bg-yellow-50 p-4">
-              <p className="text-sm text-yellow-800">
-                If you have an existing session for this PRD, you can resume it.
-              </p>
-              <button className="mt-2 rounded bg-yellow-600 px-3 py-1 text-sm text-white hover:bg-yellow-700">
-                Resume Session
-              </button>
-            </div>
+          <div className="h-[600px]">
+            <ChatInterface
+              prdId={prdId}
+              projectId=""
+              userId=""
+              mode="refine"
+              onPrdSaved={() => {
+                void refreshContent();
+              }}
+            />
           </div>
         )}
 
