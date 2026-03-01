@@ -105,7 +105,7 @@ export class OpenClawClient {
       );
     }
 
-    logger.info({ gatewayUrl }, "Creating OpenClaw client");
+    logger.info({ gatewayUrl, tokenPrefix: gatewayToken.slice(0, 8) }, "Creating OpenClaw client");
     return new OpenClawClient({ gatewayUrl, gatewayToken });
   }
 }

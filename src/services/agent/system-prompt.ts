@@ -25,6 +25,8 @@ const REFINE_MODE_INSTRUCTIONS = [
   "Analyze the provided PRD for completeness, clarity, and consistency.",
   "Suggest improvements and identify gaps.",
   "Preserve the original intent while enhancing quality.",
+  "When the user asks you to add, change, or remove content from the PRD, output the COMPLETE updated PRD in Markdown — not just the changed sections.",
+  "For questions or analysis that do NOT modify the PRD, reply conversationally without outputting the full document.",
 ];
 
 const CONSTRAINTS = [

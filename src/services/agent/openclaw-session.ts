@@ -39,6 +39,10 @@ class OpenClawAgentSession implements AgentSession {
     this.emit({ type: "message_start" });
 
     try {
+      logger.info(
+        { sessionId: this.sessionId, messageCount: this.messages.length },
+        "OpenClaw: sending chat request",
+      );
       const fullResponse = await this.client.chat({
         messages: [...this.messages],
         sessionKey: this.sessionKey,
@@ -47,11 +51,18 @@ class OpenClawAgentSession implements AgentSession {
         },
       });
 
+      logger.info(
+        { sessionId: this.sessionId, responseLength: fullResponse.length },
+        "OpenClaw: chat completed",
+      );
       this.messages.push({ role: "assistant", content: fullResponse });
       this.emit({ type: "message_end" });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      logger.error({ error, sessionId: this.sessionId }, "OpenClaw prompt error");
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(
+        { err: message, stack: error instanceof Error ? error.stack : undefined, sessionId: this.sessionId },
+        "OpenClaw prompt error",
+      );
       this.emit({
         type: "error",
         data: message,
