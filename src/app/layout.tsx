@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { NavBar } from "@/components/nav";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemeSync } from "@/components/theme/ThemeSync";
+import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,12 +24,14 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <ThemeProvider>
-          <ThemeSync />
-          {/* @ts-expect-error Async Server Component */}
-          <NavBar />
-          {children}
-        </ThemeProvider>
+        <SessionProviderWrapper>
+          <ThemeProvider>
+            <ThemeSync />
+            {/* @ts-expect-error Async Server Component */}
+            <NavBar />
+            {children}
+          </ThemeProvider>
+        </SessionProviderWrapper>
       </body>
     </html>
   );
