@@ -46,6 +46,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             Use the /ensemble-development:ensemble:create-trd skill to create a TRD
             from the PRD file at "${{ steps.find-prd.outputs.prd_file }}".
@@ -57,12 +58,12 @@ jobs:
             --plugin-dir /tmp/ensemble/packages/core
             --plugin-dir /tmp/ensemble/packages/development
             --plugin-dir /tmp/ensemble/packages/product
-          use_commit_signing: true
 
       - name: Implement TRD
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             Use the /ensemble-development:ensemble:implement-trd skill to implement
             the TRD that was just created in the docs/TRD/ directory.
@@ -75,4 +76,3 @@ jobs:
             --plugin-dir /tmp/ensemble/packages/core
             --plugin-dir /tmp/ensemble/packages/development
             --plugin-dir /tmp/ensemble/packages/quality
-          use_commit_signing: true
