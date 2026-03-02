@@ -37,29 +37,24 @@ jobs:
           echo "prd_file=${PRD_FILE}" >> "$GITHUB_OUTPUT"
           echo "Found PRD file: ${PRD_FILE}"
 
+      - name: Clone Ensemble framework
+        run: |
+          git clone --depth 1 https://github.com/FortiumPartners/ensemble.git /tmp/ensemble
+
       - name: Create TRD from PRD
         uses: anthropics/claude-code-action@v1
         with:
           prompt: |
-            Read the PRD file at "${{ steps.find-prd.outputs.prd_file }}".
+            Use the /ensemble-development:ensemble:create-trd skill to create a TRD
+            from the PRD file at "${{ steps.find-prd.outputs.prd_file }}".
 
-            Create a Technical Requirements Document (TRD) based on this PRD.
-            Place the TRD in the docs/TRD/ directory with a filename derived from
-            the PRD filename (e.g., if PRD is "my-feature-prd.md", create
-            "docs/TRD/my-feature-trd.md").
-
-            The TRD should include:
-            - Overview and goals (derived from PRD)
-            - Technical architecture and design decisions
-            - Data models and schema changes
-            - API endpoints and contracts
-            - Implementation plan with phases
-            - Testing strategy
-            - Non-functional requirements (performance, security, observability)
-
-            Follow the conventions in CLAUDE.md.
             After creating the TRD, commit it to the current branch and push.
-          claude_args: "--model claude-opus-4-6 --max-turns 30"
+          claude_args: >-
+            --model claude-opus-4-6
+            --max-turns 30
+            --plugin-dir /tmp/ensemble/packages/core
+            --plugin-dir /tmp/ensemble/packages/development
+            --plugin-dir /tmp/ensemble/packages/product
           use_commit_signing: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -68,20 +63,17 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           prompt: |
-            Find the TRD that was just created in the docs/TRD/ directory
-            (it will be the most recently modified .md file there).
+            Use the /ensemble-development:ensemble:implement-trd skill to implement
+            the TRD that was just created in the docs/TRD/ directory.
 
-            Implement all the code changes specified in the TRD:
-            1. Read the TRD thoroughly
-            2. Follow the project conventions in CLAUDE.md
-            3. Create or modify source files as specified
-            4. Add tests for new functionality
-            5. Run the test suite (npm test) and fix any failures
-            6. Commit all implementation files and push to the current branch
-
-            Use clear, descriptive commit messages following the project's
-            "feat(scope): description" convention.
-          claude_args: "--model claude-opus-4-6 --max-turns 50"
+            Run the test suite (npm test) and fix any failures before committing.
+            Commit all implementation files and push to the current branch.
+          claude_args: >-
+            --model claude-opus-4-6
+            --max-turns 50
+            --plugin-dir /tmp/ensemble/packages/core
+            --plugin-dir /tmp/ensemble/packages/development
+            --plugin-dir /tmp/ensemble/packages/quality
           use_commit_signing: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
