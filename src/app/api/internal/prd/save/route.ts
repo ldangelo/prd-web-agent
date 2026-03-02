@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Check if a PRD with the same title already exists
       const existing = await prisma.prd.findFirst({
-        where: { title, projectId, authorId: userId },
+        where: { title, projectId, authorId: userId, isDeleted: false },
       });
 
       if (existing) {

@@ -2,13 +2,15 @@
  * PrdListItem - Table row component for displaying a single PRD.
  *
  * Shows title, project, author, status (colored badge), tags (pills),
- * last updated date, and version. Clicking navigates to the PRD detail page.
+ * last updated date, version, and (for draft owners) a delete action.
+ * Clicking anywhere on the row navigates to the PRD detail page.
  */
 "use client";
 
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { DeletePrdButton } from "./DeletePrdButton";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,7 +61,13 @@ const STATUS_CONFIG: Record<
 // Component
 // ---------------------------------------------------------------------------
 
-export function PrdListItem({ prd }: { prd: PrdListItemData }) {
+export interface PrdListItemProps {
+  prd: PrdListItemData;
+  currentUserId?: string;
+  onDeleted?: (id: string) => void;
+}
+
+export function PrdListItem({ prd, currentUserId, onDeleted }: PrdListItemProps) {
   const router = useRouter();
   const statusConfig = STATUS_CONFIG[prd.status];
 
@@ -111,6 +119,15 @@ export function PrdListItem({ prd }: { prd: PrdListItemData }) {
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         v{prd.currentVersion}
+      </td>
+      <td className="px-4 py-3">
+        {currentUserId && onDeleted && (
+          <DeletePrdButton
+            prd={prd}
+            currentUserId={currentUserId}
+            onDeleted={onDeleted}
+          />
+        )}
       </td>
     </tr>
   );

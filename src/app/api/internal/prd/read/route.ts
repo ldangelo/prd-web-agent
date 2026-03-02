@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     const prd = await prisma.prd.findFirst({
       where: {
         authorId: userId,
+        isDeleted: false,
         OR: [{ id: identifier }, { title: identifier }],
       },
       include: {

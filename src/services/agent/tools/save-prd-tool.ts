@@ -30,7 +30,7 @@ export function createSavePrdTool(
     ): Promise<ToolResult> {
       try {
         const existing = await prisma.prd.findFirst({
-          where: { title: params.title, projectId, authorId: userId },
+          where: { title: params.title, projectId, authorId: userId, isDeleted: false },
         });
 
         let prdId: string;
