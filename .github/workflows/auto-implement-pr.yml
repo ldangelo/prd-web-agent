@@ -38,6 +38,14 @@ jobs:
           echo "prd_file=${PRD_FILE}" >> "$GITHUB_OUTPUT"
           echo "Found PRD file: ${PRD_FILE}"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Create TRD from PRD
         uses: anthropics/claude-code-action@v1
         with:
@@ -54,11 +62,12 @@ jobs:
 
             After creating the TRD, commit it to the current branch and push.
 
-            IMPORTANT: Do NOT use Bash mkdir to create directories. The Write tool
-            automatically creates parent directories when writing files.
+            IMPORTANT rules for this CI environment:
+            - Do NOT use Bash mkdir — the Write tool creates directories automatically.
+            - Always Read a file before using Edit on it.
           claude_args: >-
             --model claude-sonnet-4-6
-            --max-turns 30
+            --max-turns 20
             --allowedTools "Edit,Write,Read,Glob,Grep,Bash(git:*),Bash(ls:*),Bash(cat:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*)"
 
       - name: Implement TRD
@@ -75,12 +84,15 @@ jobs:
             Use the /ensemble-development:ensemble:implement-trd skill to implement
             the TRD that was just created in the docs/TRD/ directory.
 
-            Run the test suite (npm test) and fix any failures before committing.
+            Run the test suite with `npx jest` and fix any failures before committing.
             Commit all implementation files and push to the current branch.
 
-            IMPORTANT: Do NOT use Bash mkdir to create directories. The Write tool
-            automatically creates parent directories when writing files.
+            IMPORTANT rules for this CI environment:
+            - Do NOT use Bash mkdir — the Write tool creates directories automatically.
+            - Always Read a file before using Edit on it.
+            - Use `npx jest` to run tests, NOT `./node_modules/.bin/jest`.
+            - Dependencies are already installed — do NOT run npm install.
           claude_args: >-
             --model claude-sonnet-4-6
-            --max-turns 100
+            --max-turns 60
             --allowedTools "Edit,Write,Read,Glob,Grep,Bash(git:*),Bash(cp:*),Bash(mv:*),Bash(ls:*),Bash(cat:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(node:*),Bash(npm:*),Bash(npx:*)"

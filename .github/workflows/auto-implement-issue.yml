@@ -88,6 +88,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Configure git
         run: |
           git config user.name "ensemble-bot"
@@ -138,7 +141,11 @@ jobs:
             - Do NOT create a PR
             - Just analyze the issue, plan the fix, implement changes, and run tests
             - Make all file changes directly
-          claude_args: '--allowed-tools "Edit,Write,Read,Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(mkdir:*),Bash(cp:*),Bash(mv:*),Bash(node:*),Bash(npm:*),Bash(npx:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*)"'
+            - Do NOT use Bash mkdir — the Write tool creates directories automatically
+            - Always Read a file before using Edit on it
+            - Use `npx jest` to run tests, NOT `./node_modules/.bin/jest`
+            - Dependencies are already installed — do NOT run npm install
+          claude_args: '--allowedTools "Edit,Write,Read,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(cp:*),Bash(mv:*),Bash(node:*),Bash(npm:*),Bash(npx:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*)"'
 
       # ============================================================
       # Feature path (Feature label or default)
@@ -167,7 +174,11 @@ jobs:
             Save the PRD to docs/PRD/issue-${{ github.event.issue.number }}.md
 
             Do NOT implement anything. Only create the PRD document.
-          claude_args: '--allowed-tools "Edit,Write,Read,Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(mkdir:*),Bash(node:*),Bash(npm:*),Bash(npx:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*)"'
+
+            IMPORTANT CI rules:
+            - Do NOT use Bash mkdir — the Write tool creates directories automatically
+            - Always Read a file before using Edit on it
+          claude_args: '--allowedTools "Edit,Write,Read,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(node:*),Bash(npm:*),Bash(npx:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*)"'
 
       - name: "Verify Phase 1 output"
         if: env.ISSUE_TYPE == 'feature'
@@ -207,7 +218,11 @@ jobs:
             Save the TRD to docs/TRD/issue-${{ github.event.issue.number }}.md
 
             Do NOT implement anything. Only create the TRD document.
-          claude_args: '--allowed-tools "Edit,Write,Read,Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(mkdir:*),Bash(node:*),Bash(npm:*),Bash(npx:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*)"'
+
+            IMPORTANT CI rules:
+            - Do NOT use Bash mkdir — the Write tool creates directories automatically
+            - Always Read a file before using Edit on it
+          claude_args: '--allowedTools "Edit,Write,Read,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(node:*),Bash(npm:*),Bash(npx:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*)"'
 
       - name: "Verify Phase 2 output"
         if: env.ISSUE_TYPE == 'feature'
@@ -246,7 +261,13 @@ jobs:
             Follow the project's coding standards and conventions.
             Include tests if applicable.
             Do NOT commit — just make the file changes.
-          claude_args: '--allowed-tools "Edit,Write,Read,Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(mkdir:*),Bash(cp:*),Bash(mv:*),Bash(node:*),Bash(npm:*),Bash(npx:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*)"'
+
+            IMPORTANT CI rules:
+            - Do NOT use Bash mkdir — the Write tool creates directories automatically
+            - Always Read a file before using Edit on it
+            - Use `npx jest` to run tests, NOT `./node_modules/.bin/jest`
+            - Dependencies are already installed — do NOT run npm install
+          claude_args: '--allowedTools "Edit,Write,Read,Glob,Grep,Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(cp:*),Bash(mv:*),Bash(node:*),Bash(npm:*),Bash(npx:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*)"'
 
       # ============================================================
       # Shared: Commit, PR, and issue comments
