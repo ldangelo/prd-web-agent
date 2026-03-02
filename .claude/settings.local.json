@@ -9,7 +9,13 @@
       "Bash(jj split:*)",
       "Bash(jj describe:*)",
       "Bash(JJ_EDITOR=true jj split:*)",
-      "Bash(jj diff:*)"
+      "Bash(jj diff:*)",
+      "Bash(gh run:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh api:*)"
     ]
+  },
+  "enabledPlugins": {
+    "ensemble-full@ensemble": true
   }
 }
