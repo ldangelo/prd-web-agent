@@ -117,6 +117,12 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          show_full_output: true
+          plugin_marketplaces: |
+            https://github.com/FortiumPartners/ensemble.git
+          plugins: |
+            ensemble-full@ensemble
           prompt: |
             Read CLAUDE.md for project context.
 
@@ -143,6 +149,12 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          show_full_output: true
+          plugin_marketplaces: |
+            https://github.com/FortiumPartners/ensemble.git
+          plugins: |
+            ensemble-full@ensemble
           prompt: |
             Read CLAUDE.md for project context.
 
@@ -181,6 +193,12 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          show_full_output: true
+          plugin_marketplaces: |
+            https://github.com/FortiumPartners/ensemble.git
+          plugins: |
+            ensemble-full@ensemble
           prompt: |
             Read CLAUDE.md for project context.
 
@@ -214,6 +232,12 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          show_full_output: true
+          plugin_marketplaces: |
+            https://github.com/FortiumPartners/ensemble.git
+          plugins: |
+            ensemble-full@ensemble
           prompt: |
             Read CLAUDE.md for project context.
 
