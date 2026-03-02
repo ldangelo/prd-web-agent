@@ -1,0 +1,87 @@
+name: Auto-Implement PRD
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  auto-implement:
+    name: Auto-Implement from PRD
+    if: github.event.label.name == 'auto-implement'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Find PRD file
+        id: find-prd
+        run: |
+          PRD_FILE=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep -iE '(prd|product.?req).*\.md$' \
+            | head -1)
+
+          if [ -z "$PRD_FILE" ]; then
+            echo "::error::No PRD markdown file found in this PR's changes."
+            exit 1
+          fi
+
+          echo "prd_file=${PRD_FILE}" >> "$GITHUB_OUTPUT"
+          echo "Found PRD file: ${PRD_FILE}"
+
+      - name: Create TRD from PRD
+        uses: anthropics/claude-code-action@v1
+        with:
+          prompt: |
+            Read the PRD file at "${{ steps.find-prd.outputs.prd_file }}".
+
+            Create a Technical Requirements Document (TRD) based on this PRD.
+            Place the TRD in the docs/TRD/ directory with a filename derived from
+            the PRD filename (e.g., if PRD is "my-feature-prd.md", create
+            "docs/TRD/my-feature-trd.md").
+
+            The TRD should include:
+            - Overview and goals (derived from PRD)
+            - Technical architecture and design decisions
+            - Data models and schema changes
+            - API endpoints and contracts
+            - Implementation plan with phases
+            - Testing strategy
+            - Non-functional requirements (performance, security, observability)
+
+            Follow the conventions in CLAUDE.md.
+            After creating the TRD, commit it to the current branch and push.
+          claude_args: "--model claude-opus-4-6 --max-turns 30"
+          use_commit_signing: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Implement TRD
+        uses: anthropics/claude-code-action@v1
+        with:
+          prompt: |
+            Find the TRD that was just created in the docs/TRD/ directory
+            (it will be the most recently modified .md file there).
+
+            Implement all the code changes specified in the TRD:
+            1. Read the TRD thoroughly
+            2. Follow the project conventions in CLAUDE.md
+            3. Create or modify source files as specified
+            4. Add tests for new functionality
+            5. Run the test suite (npm test) and fix any failures
+            6. Commit all implementation files and push to the current branch
+
+            Use clear, descriptive commit messages following the project's
+            "feat(scope): description" convention.
+          claude_args: "--model claude-opus-4-6 --max-turns 50"
+          use_commit_signing: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

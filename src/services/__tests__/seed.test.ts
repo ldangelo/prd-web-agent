@@ -30,7 +30,6 @@ jest.mock("@prisma/client", () => ({
 // Use a path relative to the test file location.
 // The test sits at src/services/__tests__/, so we need to go up
 // three levels to reach the project root, then into prisma/.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { seed, SEED_DEFAULTS } = require("../../../prisma/seed") as typeof import("../../../prisma/seed");
 
 // ---------------------------------------------------------------------------
