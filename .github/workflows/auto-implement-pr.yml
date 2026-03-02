@@ -43,6 +43,11 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          show_full_output: true
+          plugin_marketplaces: |
+            https://github.com/FortiumPartners/ensemble.git
+          plugins: |
+            ensemble-full@ensemble
           prompt: |
             Use the /ensemble-development:ensemble:create-trd skill to create a TRD
             from the PRD file at "${{ steps.find-prd.outputs.prd_file }}".
@@ -57,6 +62,11 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          show_full_output: true
+          plugin_marketplaces: |
+            https://github.com/FortiumPartners/ensemble.git
+          plugins: |
+            ensemble-full@ensemble
           prompt: |
             Use the /ensemble-development:ensemble:implement-trd skill to implement
             the TRD that was just created in the docs/TRD/ directory.
