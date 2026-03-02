@@ -134,7 +134,7 @@ export default function PrdDetailPage() {
               void handleTransition(toStatus, comment)
             }
           />
-          {status === "DRAFT" && (
+          {(status === "DRAFT" || status === "SUBMITTED") && (
             <button
               onClick={handleRefine}
               disabled={isGenerating}

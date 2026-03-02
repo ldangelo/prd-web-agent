@@ -57,6 +57,14 @@ const transitionMap: Record<string, TransitionOption[]> = {
       variant: "primary",
     },
   ],
+  Submitted: [
+    {
+      label: "Re-submit",
+      toStatus: "Submitted",
+      requiresComment: false,
+      variant: "primary",
+    },
+  ],
 };
 
 const variantMap: Record<string, "default" | "destructive" | "outline"> = {

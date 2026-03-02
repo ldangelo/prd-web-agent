@@ -60,8 +60,8 @@ export class SubmissionPipelineService {
       },
     });
     if (!prd) throw new NotFoundError("PRD not found");
-    if (prd.status !== "APPROVED") {
-      throw new ApiError("PRD must be in APPROVED status to submit", 422);
+    if (prd.status !== "APPROVED" && prd.status !== "SUBMITTED") {
+      throw new ApiError("PRD must be in APPROVED or SUBMITTED status to submit", 422);
     }
 
     const steps: SubmissionStep[] = STEP_NAMES.map((name) => ({
