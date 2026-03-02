@@ -40,7 +40,10 @@ export async function GET(_request: NextRequest) {
     if (role === "ADMIN") {
       // Admins can see all projects
       projects = await prisma.project.findMany({
-        include: { members: true },
+        include: {
+          members: true,
+          _count: { select: { members: true } },
+        },
         orderBy: { createdAt: "desc" },
       });
     } else {
@@ -51,7 +54,10 @@ export async function GET(_request: NextRequest) {
             some: { userId },
           },
         },
-        include: { members: true },
+        include: {
+          members: true,
+          _count: { select: { members: true } },
+        },
         orderBy: { createdAt: "desc" },
       });
     }

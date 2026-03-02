@@ -28,13 +28,13 @@ export type PrdStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "SUBMITTED";
  * DRAFT       -> IN_REVIEW
  * IN_REVIEW   -> APPROVED | DRAFT (rejection, requires comment)
  * APPROVED    -> SUBMITTED | DRAFT (re-open)
- * SUBMITTED   -> (terminal)
+ * SUBMITTED   -> DRAFT (re-open for refinement)
  */
 const TRANSITIONS: Record<PrdStatus, PrdStatus[]> = {
   DRAFT: ["IN_REVIEW"],
   IN_REVIEW: ["APPROVED", "DRAFT"],
   APPROVED: ["SUBMITTED", "DRAFT"],
-  SUBMITTED: [],
+  SUBMITTED: ["DRAFT"],
 };
 
 export class StatusWorkflowService {
@@ -187,8 +187,8 @@ export class StatusWorkflowService {
       return;
     }
 
-    // APPROVED -> SUBMITTED or APPROVED -> DRAFT: author/co-author/admin
-    if (fromStatus === "APPROVED") {
+    // APPROVED -> SUBMITTED or APPROVED -> DRAFT or SUBMITTED -> DRAFT: author/co-author/admin
+    if (fromStatus === "APPROVED" || fromStatus === "SUBMITTED") {
       const isAuthor = prd.authorId === userId;
       if (!isAuthor) {
         const coAuthor = await prisma.prdCoAuthor.findFirst({

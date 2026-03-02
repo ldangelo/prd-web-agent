@@ -150,7 +150,7 @@ describe("SubmissionPipelineService", () => {
 
       await expect(
         service.execute("prd_001", "user_author"),
-      ).rejects.toThrow("PRD must be in APPROVED status to submit");
+      ).rejects.toThrow("PRD must be in APPROVED or SUBMITTED status to submit");
     });
   });
 

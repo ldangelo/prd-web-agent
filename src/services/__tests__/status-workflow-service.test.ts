@@ -149,8 +149,8 @@ describe("StatusWorkflowService", () => {
       expect(transitions).toHaveLength(2);
     });
 
-    it("should return [] for SUBMITTED", () => {
-      expect(service.getValidTransitions("SUBMITTED")).toEqual([]);
+    it("should return [DRAFT] for SUBMITTED", () => {
+      expect(service.getValidTransitions("SUBMITTED")).toEqual(["DRAFT"]);
     });
   });
 
@@ -187,8 +187,11 @@ describe("StatusWorkflowService", () => {
       expect(service.isValidTransition("DRAFT", "SUBMITTED")).toBe(false);
     });
 
-    it("should reject SUBMITTED -> any", () => {
-      expect(service.isValidTransition("SUBMITTED", "DRAFT")).toBe(false);
+    it("should allow SUBMITTED -> DRAFT (re-open for refinement)", () => {
+      expect(service.isValidTransition("SUBMITTED", "DRAFT")).toBe(true);
+    });
+
+    it("should reject SUBMITTED -> IN_REVIEW or APPROVED", () => {
       expect(service.isValidTransition("SUBMITTED", "IN_REVIEW")).toBe(false);
       expect(service.isValidTransition("SUBMITTED", "APPROVED")).toBe(false);
     });

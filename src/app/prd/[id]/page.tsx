@@ -12,12 +12,33 @@
  * a progress indicator until generation completes.
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { DocumentTab } from "@/components/prd/DocumentTab";
 import { VersionHistory } from "@/components/prd/VersionHistory";
 import { ChatInterface } from "@/components/chat/ChatInterface";
+import { StatusBadge } from "@/components/workflow/StatusBadge";
+import { TransitionButtons } from "@/components/workflow/TransitionButtons";
+import { SubmissionModal } from "@/components/submission/SubmissionModal";
 import { usePrdGeneration } from "@/hooks/usePrdGeneration";
+
+// ---------------------------------------------------------------------------
+// Status mapping: Prisma enum ↔ display strings used by workflow components
+// ---------------------------------------------------------------------------
+
+const STATUS_TO_DISPLAY: Record<string, string> = {
+  DRAFT: "Draft",
+  IN_REVIEW: "In Review",
+  APPROVED: "Approved",
+  SUBMITTED: "Submitted",
+};
+
+const DISPLAY_TO_STATUS: Record<string, string> = {
+  Draft: "DRAFT",
+  "In Review": "IN_REVIEW",
+  Approved: "APPROVED",
+  Submitted: "SUBMITTED",
+};
 
 const TABS = ["Document", "Chat", "Comments", "History"] as const;
 type Tab = (typeof TABS)[number];
@@ -34,13 +55,52 @@ export default function PrdDetailPage() {
   );
   const [refinePrompt, setRefinePrompt] = useState<string | null>(null);
 
+  const [submissionOpen, setSubmissionOpen] = useState(false);
+
   const {
     content: documentContent,
+    title,
+    status,
     isGenerating,
     streamingText,
     error: generationError,
     refreshContent,
   } = usePrdGeneration(prdId);
+
+  const displayStatus = STATUS_TO_DISPLAY[status] ?? "Draft";
+
+  const handleTransition = useCallback(
+    async (toDisplayStatus: string, comment?: string) => {
+      const enumValue = DISPLAY_TO_STATUS[toDisplayStatus];
+      if (!enumValue) return;
+
+      // "Submitted" opens the submission modal instead of a simple status change
+      if (enumValue === "SUBMITTED") {
+        setSubmissionOpen(true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/prds/${prdId}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to: enumValue, comment }),
+        });
+        if (!res.ok) {
+          throw new Error(`Status transition failed: ${res.status}`);
+        }
+        await refreshContent();
+      } catch (err: any) {
+        console.error("Transition error:", err.message);
+      }
+    },
+    [prdId, refreshContent],
+  );
+
+  const handleSubmissionClose = useCallback(() => {
+    setSubmissionOpen(false);
+    void refreshContent();
+  }, [refreshContent]);
 
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);
@@ -63,15 +123,34 @@ export default function PrdDetailPage() {
   return (
     <main className="mx-auto max-w-5xl p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">PRD Detail</h1>
-        <button
-          onClick={handleRefine}
-          disabled={isGenerating}
-          className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
-        >
-          Refine
-        </button>
+        <div className="flex items-center gap-3">
+          <StatusBadge status={displayStatus} />
+          <h1 className="text-2xl font-bold">{title || "PRD Detail"}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <TransitionButtons
+            currentStatus={displayStatus}
+            onTransition={(toStatus, comment) =>
+              void handleTransition(toStatus, comment)
+            }
+          />
+          {(status === "DRAFT" || status === "SUBMITTED") && (
+            <button
+              onClick={handleRefine}
+              disabled={isGenerating}
+              className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
+            >
+              Refine
+            </button>
+          )}
+        </div>
       </div>
+
+      <SubmissionModal
+        prdId={prdId}
+        isOpen={submissionOpen}
+        onClose={handleSubmissionClose}
+      />
 
       {/* Tab navigation */}
       <div className="mt-6 border-b" role="tablist">

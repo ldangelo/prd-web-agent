@@ -24,6 +24,7 @@ export async function GET(
       select: {
         id: true,
         title: true,
+        status: true,
         generationStatus: true,
         generationError: true,
         currentVersion: true,
@@ -50,6 +51,7 @@ export async function GET(
       prd: {
         id: prd.id,
         title: prd.title,
+        status: prd.status,
         generationStatus: prd.generationStatus,
         generationError: prd.generationError,
         currentVersion: prd.currentVersion,

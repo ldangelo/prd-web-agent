@@ -198,6 +198,7 @@ async function savePrdIfNeeded(
     where: { id: prdId },
     data: {
       currentVersion: newVersion,
+      status: "DRAFT",
       ...(title ? { title } : {}),
     },
   });
