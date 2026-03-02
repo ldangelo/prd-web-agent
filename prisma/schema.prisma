@@ -126,6 +126,8 @@ model Prd {
   githubBranch     String?
   generationStatus String?
   generationError  String?
+  isDeleted       Boolean     @default(false)
+  deletedAt       DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

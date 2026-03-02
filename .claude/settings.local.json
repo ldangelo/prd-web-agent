@@ -12,7 +12,8 @@
       "Bash(jj diff:*)",
       "Bash(gh run:*)",
       "Bash(gh pr:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(jj:*)"
     ]
   },
   "enabledPlugins": {

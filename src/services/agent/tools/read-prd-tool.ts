@@ -28,6 +28,7 @@ export function createReadPrdTool(
           where: {
             projectId,
             authorId: userId,
+            isDeleted: false,
             OR: [
               { id: params.identifier },
               { title: params.identifier },
