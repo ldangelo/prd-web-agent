@@ -13,6 +13,12 @@ enum Role {
   ADMIN
 }
 
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
 enum PrdStatus {
   DRAFT
   IN_REVIEW
@@ -42,6 +48,7 @@ model User {
   auditEntries  AuditEntry[]
   projectMemberships ProjectMember[]
   llmSettings   UserLlmSettings?
+  themePreference ThemePreference @default(SYSTEM)
 }
 
 model Account {

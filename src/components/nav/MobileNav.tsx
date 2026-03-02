@@ -27,15 +27,15 @@ export function MobileNav({ links, userName }: MobileNavProps) {
       <SheetTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white"
+          className="inline-flex items-center justify-center rounded-md p-2 text-[rgb(var(--nav-foreground))] opacity-60 hover:bg-[rgb(var(--nav-item-hover))] hover:opacity-100"
           aria-label="Open navigation menu"
         >
           <Menu className="h-6 w-6" />
         </button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 bg-gray-800 p-0 border-gray-700">
+      <SheetContent side="left" className="w-72 bg-[rgb(var(--nav-background))] p-0 border-[rgb(var(--nav-item-hover))]">
         <SheetHeader className="px-4 pt-4 pb-2">
-          <SheetTitle className="text-white text-lg font-semibold">
+          <SheetTitle className="text-[rgb(var(--nav-foreground))] text-lg font-semibold">
             PRD Agent
           </SheetTitle>
         </SheetHeader>

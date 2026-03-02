@@ -50,10 +50,35 @@
 }
 
 @layer base {
+  :root {
+    --nav-background: 31 41 55;
+    --nav-foreground: 255 255 255;
+    --nav-item-hover: 55 65 81;
+    --nav-item-active: 75 85 99;
+    --code-background: 243 244 246;
+    --code-foreground: 17 24 39;
+    --code-border: 229 231 235;
+  }
+  .dark {
+    --nav-background: 15 23 42;
+    --nav-foreground: 248 250 252;
+    --nav-item-hover: 30 41 59;
+    --nav-item-active: 51 65 85;
+    --code-background: 30 41 59;
+    --code-foreground: 226 232 240;
+    --code-border: 51 65 85;
+  }
+}
+
+@layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
   }
+}
+
+html {
+  transition: background-color 150ms ease, color 150ms ease;
 }
