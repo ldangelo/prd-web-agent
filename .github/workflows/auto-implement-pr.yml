@@ -54,7 +54,7 @@ jobs:
 
             After creating the TRD, commit it to the current branch and push.
           claude_args: >-
-            --model claude-opus-4-6
+            --model claude-sonnet-4-6
             --max-turns 30
 
       - name: Implement TRD
@@ -74,5 +74,5 @@ jobs:
             Run the test suite (npm test) and fix any failures before committing.
             Commit all implementation files and push to the current branch.
           claude_args: >-
-            --model claude-opus-4-6
+            --model claude-sonnet-4-6
             --max-turns 50
