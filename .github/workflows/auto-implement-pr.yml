@@ -53,10 +53,13 @@ jobs:
             from the PRD file at "${{ steps.find-prd.outputs.prd_file }}".
 
             After creating the TRD, commit it to the current branch and push.
+
+            IMPORTANT: Do NOT use Bash mkdir to create directories. The Write tool
+            automatically creates parent directories when writing files.
           claude_args: >-
             --model claude-sonnet-4-6
             --max-turns 30
-            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(git:*),Bash(mkdir:*),Bash(ls:*),Bash(cat:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*)"
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(git:*),Bash(ls:*),Bash(cat:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*)"
 
       - name: Implement TRD
         uses: anthropics/claude-code-action@v1
@@ -74,7 +77,10 @@ jobs:
 
             Run the test suite (npm test) and fix any failures before committing.
             Commit all implementation files and push to the current branch.
+
+            IMPORTANT: Do NOT use Bash mkdir to create directories. The Write tool
+            automatically creates parent directories when writing files.
           claude_args: >-
             --model claude-sonnet-4-6
-            --max-turns 50
-            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(git:*),Bash(mkdir:*),Bash(cp:*),Bash(mv:*),Bash(ls:*),Bash(cat:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(node:*),Bash(npm:*),Bash(npx:*)"
+            --max-turns 100
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(git:*),Bash(cp:*),Bash(mv:*),Bash(ls:*),Bash(cat:*),Bash(find:*),Bash(grep:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(node:*),Bash(npm:*),Bash(npx:*)"
