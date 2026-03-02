@@ -7,3 +7,6 @@ node_modules/
 coverage/
 logs/
 *.tsbuildinfo
+playwright-report/
+test-results/
+.claude-plugin/
