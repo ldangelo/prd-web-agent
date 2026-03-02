@@ -37,12 +37,14 @@ describe("TransitionButtons", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows no buttons when status is Submitted", () => {
+  it("shows Re-submit button when status is Submitted", () => {
     render(
       <TransitionButtons currentStatus="Submitted" onTransition={jest.fn()} />
     );
 
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /re-submit/i })
+    ).toBeInTheDocument();
   });
 
   it("shows confirmation dialog before transition", async () => {
