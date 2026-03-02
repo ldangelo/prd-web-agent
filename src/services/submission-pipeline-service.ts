@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { AuditService } from "./audit-service";
 import { NotFoundError, ApiError } from "@/lib/api/errors";
 import { GitHubSubmissionService } from "./github-submission-service";
+import { GitHubTokenService } from "@/lib/github/token-service";
 import type { SubmissionStep } from "./integrations/types";
 
 const STEP_NAMES = ["github"] as const;
@@ -102,18 +103,14 @@ export class SubmissionPipelineService {
       steps[0].status = "in_progress";
 
       try {
-        // Get user's GitHub OAuth token
-        const account = await prisma.account.findFirst({
-          where: { userId, provider: "github" },
-        });
-        if (!account?.access_token) {
-          throw new Error("No GitHub OAuth token found. Please connect your GitHub account.");
-        }
+        // Get a valid GitHub OAuth token (refreshing if expired)
+        const tokenService = new GitHubTokenService();
+        const githubToken = await tokenService.getValidTokenOrRefresh(userId);
 
         const prdContent = prd.versions?.[0]?.content ?? "";
 
         const result = await this.githubService.submit({
-          githubToken: account.access_token,
+          githubToken,
           repoFullName: prd.project.githubRepo,
           prdId: prd.id,
           prdTitle: prd.title,
@@ -222,12 +219,8 @@ export class SubmissionPipelineService {
 
     // Production retry path using GitHubSubmissionService
     try {
-      const account = await prisma.account.findFirst({
-        where: { userId, provider: "github" },
-      });
-      if (!account?.access_token) {
-        throw new Error("No GitHub OAuth token found.");
-      }
+      const tokenService = new GitHubTokenService();
+      const githubToken = await tokenService.getValidTokenOrRefresh(userId);
 
       const fullPrd = await prisma.prd.findUnique({
         where: { id: prdId },
@@ -242,7 +235,7 @@ export class SubmissionPipelineService {
       const prdContent = fullPrd.versions?.[0]?.content ?? "";
 
       const result = await this.githubService.submit({
-        githubToken: account.access_token,
+        githubToken,
         repoFullName: fullPrd.project.githubRepo,
         prdId: fullPrd.id,
         prdTitle: fullPrd.title,
