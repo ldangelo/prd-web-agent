@@ -116,7 +116,7 @@ jobs:
         if: env.ISSUE_TYPE == 'fix'
         uses: anthropics/claude-code-action@v1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
             Read CLAUDE.md for project context.
 
@@ -142,7 +142,7 @@ jobs:
         if: env.ISSUE_TYPE == 'feature'
         uses: anthropics/claude-code-action@v1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
             Read CLAUDE.md for project context.
 
@@ -180,7 +180,7 @@ jobs:
         if: env.ISSUE_TYPE == 'feature'
         uses: anthropics/claude-code-action@v1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
             Read CLAUDE.md for project context.
 
@@ -213,7 +213,7 @@ jobs:
         if: env.ISSUE_TYPE == 'feature'
         uses: anthropics/claude-code-action@v1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
             Read CLAUDE.md for project context.
 
