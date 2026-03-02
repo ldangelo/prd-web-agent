@@ -59,6 +59,7 @@ export default function PrdDetailPage() {
 
   const {
     content: documentContent,
+    title,
     status,
     isGenerating,
     streamingText,
@@ -124,7 +125,7 @@ export default function PrdDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <StatusBadge status={displayStatus} />
-          <h1 className="text-2xl font-bold">PRD Detail</h1>
+          <h1 className="text-2xl font-bold">{title || "PRD Detail"}</h1>
         </div>
         <div className="flex items-center gap-2">
           <TransitionButtons
