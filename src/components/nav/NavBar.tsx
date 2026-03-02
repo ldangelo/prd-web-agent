@@ -4,6 +4,7 @@ import { NavLinks } from "./NavLinks";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
 import { NotificationBell } from "@/components/notifications";
+import { ThemeToggle } from "@/components/theme";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -27,14 +28,14 @@ export async function NavBar() {
       : NAV_LINKS;
 
   return (
-    <nav className="relative bg-gray-800">
+    <nav className="relative bg-[rgb(var(--nav-background))]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
           {/* Left: Logo + Links */}
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
-              className="text-lg font-semibold text-white"
+              className="text-lg font-semibold text-[rgb(var(--nav-foreground))]"
             >
               PRD Agent
             </Link>
@@ -43,8 +44,9 @@ export async function NavBar() {
             </div>
           </div>
 
-          {/* Right: Notifications + User */}
+          {/* Right: ThemeToggle + Notifications + User */}
           <div className="hidden items-center gap-3 sm:flex">
+            <ThemeToggle />
             <NotificationBell />
             <UserMenu
               userName={session.user.name}
