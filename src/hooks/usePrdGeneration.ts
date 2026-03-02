@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSession } from "next-auth/react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,6 +52,7 @@ export interface UsePrdGenerationResult {
 // ---------------------------------------------------------------------------
 
 export function usePrdGeneration(prdId: string): UsePrdGenerationResult {
+  const { data: session, status: sessionStatus } = useSession();
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState("DRAFT");
@@ -93,20 +95,33 @@ export function usePrdGeneration(prdId: string): UsePrdGenerationResult {
     }
   }, [prdId]);
 
-  // Connect to Socket.io for real-time updates
+  // Connect to Socket.io for real-time updates once the session is available
   useEffect(() => {
+    // Wait until session resolves — don't connect with an unknown user ID
+    if (sessionStatus === "loading") return;
+    if (sessionStatus === "unauthenticated") return;
+
+    const userId = session?.user?.id;
+    if (!userId) return;
+
     let socket: any = null;
     let cleanup = false;
 
     async function connectSocket() {
       try {
+        // Ensure the Socket.io server is initialized on the Next.js HTTP
+        // server before attempting to connect. This endpoint is idempotent.
+        await fetch("/api/socketio");
+
         // Dynamic import to avoid SSR issues
         const { io } = await import("socket.io-client");
 
         if (cleanup) return;
 
+        // Connect with the real user ID so the server puts this socket into
+        // the correct room (user:{userId}) for targeted broadcasts.
         socket = io("/agent", {
-          auth: { userId: "current" }, // Auth will be resolved server-side
+          auth: { userId },
           transports: ["websocket", "polling"],
         });
 
@@ -149,7 +164,7 @@ export function usePrdGeneration(prdId: string): UsePrdGenerationResult {
       }
       socketRef.current = null;
     };
-  }, [prdId, fetchLatestVersion]);
+  }, [prdId, session?.user?.id, sessionStatus, fetchLatestVersion]);
 
   // Initial fetch
   useEffect(() => {

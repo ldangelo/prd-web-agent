@@ -4,6 +4,15 @@
  * Tests for /prd/[id] - the page with tab navigation (Document, Chat, Comments, History).
  */
 
+// Mock next-auth/react (ESM package) before imports
+jest.mock("next-auth/react", () => ({
+  useSession: () => ({
+    data: { user: { id: "user-test", email: "test@example.com", role: "AUTHOR" } },
+    status: "authenticated",
+  }),
+  SessionProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 // Mock ESM-only react-markdown and remark-gfm before imports
 jest.mock("react-markdown", () => {
   const React = require("react");

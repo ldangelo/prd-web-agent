@@ -44,6 +44,7 @@ const config: Config = {
       testMatch: [
         "**/app/**/__tests__/**/*.test.tsx",
         "**/components/**/__tests__/**/*.test.tsx",
+        "**/hooks/**/__tests__/**/*.test.ts",
       ],
       setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
     },
