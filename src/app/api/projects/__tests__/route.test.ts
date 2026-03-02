@@ -89,7 +89,7 @@ describe("GET /api/projects", () => {
     // Admin query should not have a where clause with members filter
     expect(mockProjectFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        include: { members: true },
+        include: { members: true, _count: { select: { members: true } } },
         orderBy: { createdAt: "desc" },
       }),
     );
