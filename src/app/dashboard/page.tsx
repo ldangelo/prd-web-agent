@@ -7,6 +7,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   PrdListItem,
   FilterBar,
@@ -20,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Toaster } from "@/components/ui/sonner";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,6 +44,9 @@ interface FilterOption {
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id ?? "";
+
   const [items, setItems] = useState<PrdListItemData[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -187,6 +192,10 @@ export default function DashboardPage() {
     }
   }
 
+  function handleDeleted(id: string) {
+    setItems((prev) => prev.filter((p) => p.id !== id));
+  }
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -251,11 +260,19 @@ export default function DashboardPage() {
                 <TableHead>Tags</TableHead>
                 <TableHead>Updated</TableHead>
                 <TableHead>Version</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <PrdListItem key={item.id} prd={item} />
+                <PrdListItem
+                  key={item.id}
+                  prd={item}
+                  currentUserId={currentUserId}
+                  onDeleted={handleDeleted}
+                />
               ))}
             </TableBody>
           </Table>
@@ -291,6 +308,7 @@ export default function DashboardPage() {
           )}
         </>
       )}
+      <Toaster />
     </main>
   );
 }
