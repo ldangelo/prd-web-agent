@@ -38,10 +38,6 @@ jobs:
           echo "prd_file=${PRD_FILE}" >> "$GITHUB_OUTPUT"
           echo "Found PRD file: ${PRD_FILE}"
 
-      - name: Clone Ensemble framework
-        run: |
-          git clone --depth 1 https://github.com/FortiumPartners/ensemble.git /tmp/ensemble
-
       - name: Create TRD from PRD
         uses: anthropics/claude-code-action@v1
         with:
@@ -55,9 +51,6 @@ jobs:
           claude_args: >-
             --model claude-opus-4-6
             --max-turns 30
-            --plugin-dir /tmp/ensemble/packages/core
-            --plugin-dir /tmp/ensemble/packages/development
-            --plugin-dir /tmp/ensemble/packages/product
 
       - name: Implement TRD
         uses: anthropics/claude-code-action@v1
@@ -73,6 +66,3 @@ jobs:
           claude_args: >-
             --model claude-opus-4-6
             --max-turns 50
-            --plugin-dir /tmp/ensemble/packages/core
-            --plugin-dir /tmp/ensemble/packages/development
-            --plugin-dir /tmp/ensemble/packages/quality
