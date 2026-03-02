@@ -129,6 +129,21 @@ describe("DELETE /api/internal/prd/delete", () => {
   // Validation
   // -------------------------------------------------------------------------
 
+  it("should return 400 when request body is invalid JSON", async () => {
+    const req = new NextRequest("http://localhost/api/internal/prd/delete", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${VALID_TOKEN}`,
+      },
+      body: "this is not valid json {{{",
+    });
+    const response = await DELETE(req);
+    const body = await response.json();
+    expect(response.status).toBe(400);
+    expect(body.error).toMatch(/invalid json/i);
+  });
+
   it("should return 400 when body is missing identifier", async () => {
     const req = makeRequest({ userId: "user_001" }, VALID_TOKEN);
     const response = await DELETE(req);
