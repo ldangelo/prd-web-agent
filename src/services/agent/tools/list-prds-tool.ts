@@ -32,6 +32,7 @@ export function createListPrdsTool(
         const where: any = {
           projectId: targetProjectId,
           authorId: userId,
+          isDeleted: false,
         };
 
         if (params.search) {

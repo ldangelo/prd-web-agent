@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       return apiError("Missing required param: userId", 400);
     }
 
-    const where: any = { authorId: userId };
+    const where: any = { authorId: userId, isDeleted: false };
 
     if (projectId) {
       where.projectId = projectId;

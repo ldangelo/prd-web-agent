@@ -10,3 +10,5 @@ logs/
 playwright-report/
 test-results/
 .claude-plugin/
+.claude/settings.local.json
+.claude/worktrees/

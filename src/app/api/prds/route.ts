@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       : "desc";
 
     // Filtering
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { isDeleted: false };
 
     const projectId = searchParams.get("project");
     if (projectId) where.projectId = projectId;
