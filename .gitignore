@@ -13,6 +13,7 @@ test-results/
 .claude/settings.local.json
 .claude/worktrees/
 
-# Dolt database files (added by bd init)
+# Beads (bd) issue tracker and Dolt database local state
+.beads/
 .dolt/
 *.db
