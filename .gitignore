@@ -12,3 +12,7 @@ test-results/
 .claude-plugin/
 .claude/settings.local.json
 .claude/worktrees/
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
