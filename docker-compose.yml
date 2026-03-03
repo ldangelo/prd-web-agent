@@ -42,7 +42,7 @@ services:
       - ./openclaw/skills:/home/node/.openclaw/workspace/skills
       - ./openclaw/config/openclaw.json:/home/node/.openclaw/openclaw.json
     ports:
-      - "18789:18789"
+      - "18790:18789"
     command: ["gateway", "--port", "18789"]
 
 volumes:
