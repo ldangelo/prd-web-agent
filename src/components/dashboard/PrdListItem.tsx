@@ -97,10 +97,10 @@ export function PrdListItem({ prd, currentUserId, onDeleted }: PrdListItemProps)
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {prd.project.name}
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
+      <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
         {prd.author.name}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 whitespace-nowrap">
         <Badge variant={statusConfig.variant} className={cn(statusConfig.className)}>
           {statusConfig.label}
         </Badge>
@@ -114,10 +114,10 @@ export function PrdListItem({ prd, currentUserId, onDeleted }: PrdListItemProps)
           ))}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
+      <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
         {formattedDate}
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
+      <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
         v{prd.currentVersion}
       </td>
       <td className="px-4 py-3">

@@ -250,16 +250,17 @@ export default function DashboardPage() {
       {/* PRD table */}
       {!loading && items.length > 0 && (
         <>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead>Project</TableHead>
-                <TableHead>Author</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="whitespace-nowrap">Author</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
                 <TableHead>Tags</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead>Version</TableHead>
+                <TableHead className="whitespace-nowrap">Updated</TableHead>
+                <TableHead className="whitespace-nowrap">Version</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -276,6 +277,7 @@ export default function DashboardPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
