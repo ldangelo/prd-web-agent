@@ -11,12 +11,18 @@ import { DeletePrdButton } from "../DeletePrdButton";
 // Mocks
 // ---------------------------------------------------------------------------
 
+const mockPush = jest.fn();
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 jest.mock("@/lib/api/prds", () => ({
   deletePrd: jest.fn(),
 }));
 
 jest.mock("sonner", () => ({
   toast: Object.assign(jest.fn(), {
+    success: jest.fn(),
     error: jest.fn(),
   }),
 }));
@@ -152,6 +158,7 @@ describe("DeletePrdButton", () => {
     beforeEach(() => {
       jest.useFakeTimers();
       jest.clearAllMocks();
+      mockPush.mockClear();
       (deletePrd as jest.Mock).mockResolvedValue(undefined);
     });
 
@@ -209,9 +216,26 @@ describe("DeletePrdButton", () => {
       fireEvent.click(confirmBtn);
 
       await waitFor(() => {
-        expect(toast).toHaveBeenCalledWith(
+        expect(toast.success).toHaveBeenCalledWith(
           expect.stringContaining("My Draft PRD"),
         );
+      });
+    });
+
+    it("navigates to /dashboard after successful deletion", async () => {
+      render(
+        <DeletePrdButton
+          prd={draftOwnerPrd}
+          currentUserId={currentUserId}
+          onDeleted={jest.fn()}
+        />,
+      );
+
+      const confirmBtn = await openModalAndAdvanceGuard();
+      fireEvent.click(confirmBtn);
+
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith("/dashboard");
       });
     });
   });
