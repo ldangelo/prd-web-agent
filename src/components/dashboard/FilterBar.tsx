@@ -58,7 +58,7 @@ export function FilterBar({
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-4 rounded-lg border border-border bg-card p-4">
+    <div className="flex flex-wrap items-end gap-4">
       {/* Project filter */}
       <div className="flex flex-col gap-1">
         <Label htmlFor="filter-project">Project</Label>
