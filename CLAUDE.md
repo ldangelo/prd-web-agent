@@ -96,4 +96,4 @@ Full orchestrated startup: `process-compose up` (docker → migrate → next dev
 3. Do the work, run tests (`devbox run test`)
 4. `bd close <id>` — mark done
 5. `jj describe -m "feat: ..."` — describe the change
-6. `bd sync --from-main` — sync beads
+6. `bd dolt push` — push beads issue database to Dolt remote
