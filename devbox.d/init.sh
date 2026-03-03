@@ -27,9 +27,16 @@ if ! docker info >/dev/null 2>&1; then
   echo "⚠ Docker daemon is not running. Start Docker Desktop or the Docker service."
 fi
 
-# Start Dolt server for beads (bd) issue tracker if not already running
+# Dolt server for beads (bd) is managed by a macOS LaunchAgent
+# (~/Library/LaunchAgents/com.ldangelo.beads-dolt.plist) which keeps it running
+# persistently and auto-restarts it if killed by bd's idle-monitor.
+# Only fall back to manual start if launchd isn't managing it (e.g. CI/Linux).
 if command -v bd >/dev/null 2>&1; then
   if ! nc -z 127.0.0.1 3307 >/dev/null 2>&1; then
-    bd dolt start >/dev/null 2>&1 && echo "✓ Beads Dolt server started" || echo "⚠ Failed to start Beads Dolt server"
+    if [ "$(uname)" != "Darwin" ] || ! launchctl list com.ldangelo.beads-dolt >/dev/null 2>&1; then
+      bd dolt start >/dev/null 2>&1 && echo "✓ Beads Dolt server started" || echo "⚠ Failed to start Beads Dolt server"
+    else
+      echo "⚠ Beads Dolt server not yet up (LaunchAgent managing it — wait a moment)"
+    fi
   fi
 fi
