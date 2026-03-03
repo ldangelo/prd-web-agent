@@ -10,18 +10,27 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   PrdListItem,
-  FilterBar,
   SearchBar,
 } from "@/components/dashboard";
 import type { PrdListItemData, FilterValues } from "@/components/dashboard";
 import {
   Table,
   TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Toaster } from "@/components/ui/sonner";
+
+// ---------------------------------------------------------------------------
+// Compact filter input styles for inline table header filters
+// ---------------------------------------------------------------------------
+
+const filterSelectClass =
+  "h-7 w-full rounded border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring";
+const filterInputClass =
+  "h-7 w-full rounded border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -214,16 +223,6 @@ export default function DashboardPage() {
         <SearchBar onSearch={handleSearch} />
       </div>
 
-      {/* Filter bar */}
-      <div className="mb-6">
-        <FilterBar
-          projects={projects}
-          authors={authors}
-          filters={filters}
-          onFilterChange={handleFilterChange}
-        />
-      </div>
-
       {/* Error state */}
       {error && (
         <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-700">
@@ -231,84 +230,165 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && (
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          Loading PRDs...
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!loading && items.length === 0 && (
-        <div className="py-12 text-center">
-          <p className="text-sm text-muted-foreground">
-            No PRDs found. Create one to get started.
-          </p>
-        </div>
-      )}
-
-      {/* PRD table */}
-      {!loading && items.length > 0 && (
-        <>
-          <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead className="whitespace-nowrap">Author</TableHead>
-                <TableHead className="whitespace-nowrap">Status</TableHead>
-                <TableHead>Tags</TableHead>
-                <TableHead className="whitespace-nowrap">Updated</TableHead>
-                <TableHead className="whitespace-nowrap">Version</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <PrdListItem
-                  key={item.id}
-                  prd={item}
-                  currentUserId={currentUserId}
-                  onDeleted={handleDeleted}
+      {/* PRD table with inline column filters */}
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            {/* Column labels */}
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Project</TableHead>
+              <TableHead className="whitespace-nowrap">Author</TableHead>
+              <TableHead className="whitespace-nowrap">Status</TableHead>
+              <TableHead>Tags</TableHead>
+              <TableHead className="whitespace-nowrap">Updated</TableHead>
+              <TableHead className="whitespace-nowrap">Version</TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+            {/* Inline filters — each aligns directly above its column */}
+            <TableRow>
+              <TableHead />{/* Title — use search bar above */}
+              <TableHead>
+                <select
+                  aria-label="Filter by project"
+                  className={filterSelectClass}
+                  value={filters.project || ""}
+                  onChange={(e) =>
+                    handleFilterChange({ ...filters, project: e.target.value || undefined })
+                  }
+                >
+                  <option value="">All</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </TableHead>
+              <TableHead>
+                <select
+                  aria-label="Filter by author"
+                  className={filterSelectClass}
+                  value={filters.author || ""}
+                  onChange={(e) =>
+                    handleFilterChange({ ...filters, author: e.target.value || undefined })
+                  }
+                >
+                  <option value="">All</option>
+                  {authors.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </TableHead>
+              <TableHead>
+                <select
+                  aria-label="Filter by status"
+                  className={filterSelectClass}
+                  value={filters.status || ""}
+                  onChange={(e) =>
+                    handleFilterChange({ ...filters, status: e.target.value || undefined })
+                  }
+                >
+                  <option value="">All</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="IN_REVIEW">In Review</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="SUBMITTED">Submitted</option>
+                </select>
+              </TableHead>
+              <TableHead>
+                <input
+                  type="text"
+                  aria-label="Filter by tags"
+                  placeholder="e.g. auth"
+                  className={filterInputClass}
+                  value={filters.tags || ""}
+                  onChange={(e) =>
+                    handleFilterChange({ ...filters, tags: e.target.value || undefined })
+                  }
                 />
-              ))}
-            </TableBody>
-          </Table>
-          </div>
+              </TableHead>
+              <TableHead>
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="date"
+                    aria-label="Filter from date"
+                    className={filterInputClass}
+                    value={filters.from || ""}
+                    onChange={(e) =>
+                      handleFilterChange({ ...filters, from: e.target.value || undefined })
+                    }
+                  />
+                  <input
+                    type="date"
+                    aria-label="Filter to date"
+                    className={filterInputClass}
+                    value={filters.to || ""}
+                    onChange={(e) =>
+                      handleFilterChange({ ...filters, to: e.target.value || undefined })
+                    }
+                  />
+                </div>
+              </TableHead>
+              <TableHead />{/* Version — no filter */}
+              <TableHead />{/* Actions — no filter */}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
+                  Loading PRDs...
+                </TableCell>
+              </TableRow>
+            )}
+            {!loading && items.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
+                  No PRDs found. Create one to get started.
+                </TableCell>
+              </TableRow>
+            )}
+            {!loading && items.map((item) => (
+              <PrdListItem
+                key={item.id}
+                prd={item}
+                currentUserId={currentUserId}
+                onDeleted={handleDeleted}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-                {Math.min(
-                  pagination.page * pagination.limit,
-                  pagination.total,
-                )}{" "}
-                of {pagination.total} results
-              </p>
-              <div className="flex gap-2">
-                <button
-                  className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-50"
-                  disabled={pagination.page <= 1}
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                >
-                  Previous
-                </button>
-                <button
-                  className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-50"
-                  disabled={pagination.page >= pagination.totalPages}
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </>
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+            {Math.min(
+              pagination.page * pagination.limit,
+              pagination.total,
+            )}{" "}
+            of {pagination.total} results
+          </p>
+          <div className="flex gap-2">
+            <button
+              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-50"
+              disabled={pagination.page <= 1}
+              onClick={() => handlePageChange(pagination.page - 1)}
+            >
+              Previous
+            </button>
+            <button
+              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground hover:bg-accent disabled:opacity-50"
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => handlePageChange(pagination.page + 1)}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
       <Toaster />
     </main>
