@@ -11,6 +11,7 @@ import { AgentSessionManager } from "./agent-session-manager";
 import type { AgentSessionEvent } from "@/types/pi-sdk";
 import { prisma } from "@/lib/prisma";
 import logger from "@/lib/logger";
+import { buildCreatePrompt } from "@/lib/prd/build-create-prompt";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -103,15 +104,7 @@ async function runGeneration(opts: TriggerPrdGenerationOptions): Promise<void> {
     // -----------------------------------------------------------------------
     // 3. Send the description as the initial prompt
     // -----------------------------------------------------------------------
-    const prompt = [
-      `Create a comprehensive PRD for the following product:`,
-      ``,
-      opts.description,
-      ``,
-      `Output the complete PRD as well-structured Markdown. Include sections for:`,
-      `Summary, Problem Statement, User Analysis, Goals/Non-Goals,`,
-      `Functional Requirements, Non-Functional Requirements, and Success Metrics.`,
-    ].join("\n");
+    const prompt = buildCreatePrompt(opts.description);
 
     // Collect the full response text
     let generatedContent = "";

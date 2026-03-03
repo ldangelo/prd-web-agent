@@ -30,6 +30,13 @@ export default function NewPrdPage() {
   const [error, setError] = useState<string | null>(null);
 
   const streamingPreviewRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     async function loadProjects() {
@@ -60,6 +67,7 @@ export default function NewPrdPage() {
       return;
     }
 
+    setStreamingText("");
     setIsSubmitting(true);
     setError(null);
 
@@ -76,6 +84,7 @@ export default function NewPrdPage() {
       if (!res.ok) {
         const body = await res.json();
         setError(body.error ?? "Failed to create PRD");
+        setIsSubmitting(false);
         return;
       }
 
@@ -83,21 +92,24 @@ export default function NewPrdPage() {
       prdId = body.data.prdId;
     } catch {
       setError("Network error. Please try again.");
-      return;
-    } finally {
       setIsSubmitting(false);
+      return;
     }
 
-    // Phase 2 — Stream generation via SSE
+    // Phase 2 — batch isSubmitting=false + isGenerating=true in same render
+    setIsSubmitting(false);
     setIsGenerating(true);
     setStreamingText("");
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     let savedPrdId: string | null = null;
 
     try {
       const res = await fetch(`/api/prds/${prdId}/generate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        signal: abortController.signal,
       });
 
       if (!res.ok) {
@@ -115,6 +127,7 @@ export default function NewPrdPage() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let currentEvent = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -124,7 +137,6 @@ export default function NewPrdPage() {
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
-        let currentEvent = "";
         for (const line of lines) {
           if (line.startsWith("event: ")) {
             currentEvent = line.slice(7).trim();
@@ -139,11 +151,15 @@ export default function NewPrdPage() {
                 savedPrdId = parsed.prdId ?? prdId;
               } else if (currentEvent === "error") {
                 setError(parsed.error ?? "Generation error");
+                reader.cancel().catch(() => {});
                 return;
               }
             } catch {
               // Skip malformed JSON
             }
+          } else if (line === "") {
+            // Empty line = end of SSE event block; reset for next event
+            currentEvent = "";
           }
         }
       }
@@ -168,6 +184,12 @@ export default function NewPrdPage() {
       <p className="mt-2 text-muted-foreground">
         Create a new PRD with AI-assisted authoring.
       </p>
+
+      {error && (
+        <p className="mt-4 text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
 
       {isGenerating ? (
         <div className="mt-6">
@@ -221,12 +243,6 @@ export default function NewPrdPage() {
               className="mt-1 block w-full rounded border border-input p-2"
             />
           </div>
-
-          {error && (
-            <p className="text-sm text-red-600" role="alert">
-              {error}
-            </p>
-          )}
 
           <button
             onClick={handleStart}

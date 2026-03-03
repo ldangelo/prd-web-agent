@@ -17,6 +17,7 @@ import { prisma } from "@/lib/prisma";
 import type { AgentSessionEvent } from "@/types/pi-sdk";
 import { handleApiError, NotFoundError, ForbiddenError } from "@/lib/api/errors";
 import logger from "@/lib/logger";
+import { buildCreatePrompt } from "@/lib/prd/build-create-prompt";
 
 // ---------------------------------------------------------------------------
 // POST /api/prds/[id]/generate
@@ -50,6 +51,14 @@ export async function POST(
       throw new ForbiddenError("User is not a member of this project");
     }
 
+    // Fix 3: Idempotency guard — return 409 if already generating or completed
+    if (prd.generationStatus === "generating" || prd.generationStatus === "completed") {
+      return new Response(
+        JSON.stringify({ error: `PRD generation is already ${prd.generationStatus}` }),
+        { status: 409, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     // Mark the PRD as generating
     await prisma.prd.update({
       where: { id: prdId },
@@ -68,29 +77,33 @@ export async function POST(
       description: prd.title, // the description was saved as title initially
     });
 
-    // Build the generation prompt (mirroring prd-generator.ts lines 106-114)
-    const prompt = [
-      `Create a comprehensive PRD for the following product:`,
-      ``,
-      prd.title,
-      ``,
-      `Output the complete PRD as well-structured Markdown. Include sections for:`,
-      `Summary, Problem Statement, User Analysis, Goals/Non-Goals,`,
-      `Functional Requirements, Non-Functional Requirements, and Success Metrics.`,
-    ].join("\n");
+    // Fix 5: Use shared prompt helper instead of inline duplicate
+    const prompt = buildCreatePrompt(prd.title);
 
     logger.info(
       { sessionId, prdId, userId },
       "PRD generate: starting SSE stream",
     );
 
+    // Fix 4: Capture unsubscribe outside start() so cancel() can access it
+    let unsubscribeFn: (() => void) | null = null;
+    let streamClosed = false;
+
     // Create SSE stream
     const stream = new ReadableStream({
       start(controller) {
         const encoder = new TextEncoder();
         let generatedContent = "";
+        // streamClosed is now in outer scope
+        function closeStream() {
+          if (!streamClosed) {
+            streamClosed = true;
+            controller.close();
+          }
+        }
 
         function send(event: string, data: unknown) {
+          if (streamClosed) return;
           controller.enqueue(
             encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
           );
@@ -120,6 +133,8 @@ export async function POST(
                 .then((saved) => {
                   if (saved) {
                     send("prd_saved", { prdId, version: saved.version });
+                  } else {
+                    send("error", { error: "Agent completed but produced no content" });
                   }
                 })
                 .catch((err) => {
@@ -131,7 +146,7 @@ export async function POST(
                     logger.warn({ err, sessionId }, "PRD generate: error disposing session");
                   });
                   unsubscribe();
-                  controller.close();
+                  closeStream();
                 });
               break;
 
@@ -153,12 +168,19 @@ export async function POST(
                 });
 
               send("error", { error: errorMsg });
+              // Fix 1: dispose session on error path
+              manager.disposeAll().catch((err) => {
+                logger.warn({ err, sessionId }, "PRD generate: error disposing session after agent error");
+              });
               unsubscribe();
-              controller.close();
+              closeStream();
               break;
             }
           }
         });
+
+        // Keep a reference so cancel() can clean up on client disconnect
+        unsubscribeFn = unsubscribe;
 
         // Send the prompt to start generation
         manager.prompt(sessionId, prompt).catch((err) => {
@@ -177,9 +199,33 @@ export async function POST(
             });
 
           send("error", { error: err.message ?? "Prompt failed" });
+          // Fix 1: dispose session on prompt rejection path
+          manager.disposeAll().catch((disposeErr) => {
+            logger.warn({ err: disposeErr, sessionId }, "PRD generate: error disposing session after prompt error");
+          });
           unsubscribe();
-          controller.close();
+          closeStream();
         });
+      },
+
+      // Fix 4: Clean up when the client disconnects or navigates away
+      cancel() {
+        if (streamClosed) return; // stream already completed successfully — don't overwrite
+        logger.info({ sessionId, prdId }, "PRD generate: client disconnected, cleaning up");
+        unsubscribeFn?.();
+        prisma.prd
+          .update({
+            where: { id: prdId },
+            data: { generationStatus: "failed", generationError: "Generation cancelled by client" },
+          })
+          .catch((err) => {
+            logger.warn({ err, prdId }, "PRD generate: failed to mark PRD as failed after client disconnect");
+          });
+        manager.disposeAll().catch((err) => {
+          logger.warn({ err, sessionId }, "PRD generate: error disposing session after client disconnect");
+        });
+        // TODO: manager.prompt() is fire-and-forget; the underlying LLM call has no
+        // cancellation mechanism and will continue consuming resources until completion.
       },
     });
 
@@ -188,6 +234,7 @@ export async function POST(
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
       },
     });
   } catch (error: any) {
@@ -201,8 +248,8 @@ export async function POST(
 // ---------------------------------------------------------------------------
 
 /**
- * Persist the generated PRD content as version 1, update the PRD record's
- * title (extracted from the first heading), currentVersion, and
+ * Persist the generated PRD content as the next version, update the PRD
+ * record's title (extracted from the first heading), currentVersion, and
  * generationStatus.
  */
 async function saveGeneratedPrd(
@@ -229,10 +276,17 @@ async function saveGeneratedPrd(
   const titleMatch = generatedContent.match(/^#\s+(.+)$/m);
   const title = titleMatch ? titleMatch[1].trim() : fallbackTitle.slice(0, 120);
 
+  // Fix 2: Query the latest existing version so we never hardcode version: 1
+  const latestVersion = await prisma.prdVersion.findFirst({
+    where: { prdId },
+    orderBy: { version: "desc" },
+  });
+  const nextVersion = (latestVersion?.version ?? 0) + 1;
+
   const version = await prisma.prdVersion.create({
     data: {
       prdId,
-      version: 1,
+      version: nextVersion,
       content: generatedContent,
       changeSummary: "Initial PRD generated by AI agent",
       authorId: userId,

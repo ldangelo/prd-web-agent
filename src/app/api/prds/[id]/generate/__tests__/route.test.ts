@@ -17,6 +17,7 @@ const mockPrdFindUnique = jest.fn();
 const mockPrdUpdate = jest.fn();
 const mockProjectMemberFindUnique = jest.fn();
 const mockPrdVersionCreate = jest.fn();
+const mockPrdVersionFindFirst = jest.fn();
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -29,13 +30,14 @@ jest.mock("@/lib/prisma", () => ({
     },
     prdVersion: {
       create: (...args: unknown[]) => mockPrdVersionCreate(...args),
+      findFirst: (...args: unknown[]) => mockPrdVersionFindFirst(...args),
     },
   },
 }));
 
 // AgentSessionManager mock — captured so individual tests can control behaviour
 let capturedListener: ((event: { type: string; data?: unknown }) => void) | null = null;
-let mockSessionId = "session_test_001";
+const mockSessionId = "session_test_001";
 
 const mockCreateSession = jest.fn();
 const mockSubscribe = jest.fn();
@@ -56,7 +58,7 @@ jest.mock("@/services/agent/agent-session-manager", () => ({
 // ---------------------------------------------------------------------------
 
 import { POST } from "../route";
-import { UnauthorizedError, ForbiddenError } from "@/lib/api/errors";
+import { UnauthorizedError } from "@/lib/api/errors";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -132,6 +134,9 @@ describe("POST /api/prds/[id]/generate", () => {
     // prompt resolves immediately; tests fire agent events manually via capturedListener
     mockPrompt.mockResolvedValue(undefined);
     mockDisposeAll.mockResolvedValue(undefined);
+
+    // PrdVersion.findFirst returns null by default (no previous versions)
+    mockPrdVersionFindFirst.mockResolvedValue(null);
 
     // PrdVersion.create returns version 1
     mockPrdVersionCreate.mockResolvedValue({ id: "ver_001", version: 1 });
@@ -374,5 +379,119 @@ describe("POST /api/prds/[id]/generate", () => {
         description: "A short description for the PRD",
       }),
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // Empty content path
+  // -------------------------------------------------------------------------
+
+  it("emits error event when agent produces no content", async () => {
+    mockPrompt.mockImplementation(async () => {
+      if (capturedListener) {
+        capturedListener({ type: "message_start" });
+        capturedListener({ type: "message_end" }); // no text_delta events
+      }
+    });
+
+    const response = await POST(
+      postRequest("http://localhost/api/prds/prd_001/generate") as any,
+      makeParams("prd_001") as any,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("text/event-stream");
+
+    const chunks = await collectSseEvents(response);
+    const raw = chunks.join("");
+
+    // Stream must contain an error event, not a prd_saved event
+    expect(raw).toContain("event: error");
+    expect(raw).not.toContain("event: prd_saved");
+
+    // PRD must be marked as failed
+    expect(mockPrdUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "prd_001" },
+        data: expect.objectContaining({
+          generationStatus: "failed",
+        }),
+      }),
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Prompt rejection
+  // -------------------------------------------------------------------------
+
+  it("emits error event and marks PRD as failed when prompt rejects", async () => {
+    mockPrompt.mockRejectedValue(new Error("Connection timeout"));
+
+    const response = await POST(
+      postRequest("http://localhost/api/prds/prd_001/generate") as any,
+      makeParams("prd_001") as any,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("text/event-stream");
+
+    const chunks = await collectSseEvents(response);
+    const raw = chunks.join("");
+
+    expect(raw).toContain("event: error");
+    expect(raw).toContain("Connection timeout");
+
+    expect(mockPrdUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "prd_001" },
+        data: expect.objectContaining({
+          generationStatus: "failed",
+          generationError: "Connection timeout",
+        }),
+      }),
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Idempotency guard
+  // -------------------------------------------------------------------------
+
+  it("returns 409 when PRD is already being generated", async () => {
+    mockPrdFindUnique.mockResolvedValue({
+      id: "prd_001",
+      title: "A short description for the PRD",
+      projectId: "proj_001",
+      authorId: "user_1",
+      status: "DRAFT",
+      generationStatus: "generating",
+    });
+
+    const response = await POST(
+      postRequest("http://localhost/api/prds/prd_001/generate") as any,
+      makeParams("prd_001") as any,
+    );
+
+    expect(response.status).toBe(409);
+    const body = await response.json();
+    expect(body.error).toContain("generating");
+  });
+
+  it("returns 409 when PRD generation has already completed", async () => {
+    mockPrdFindUnique.mockResolvedValue({
+      id: "prd_001",
+      title: "A short description for the PRD",
+      projectId: "proj_001",
+      authorId: "user_1",
+      status: "DRAFT",
+      generationStatus: "completed",
+    });
+
+    const response = await POST(
+      postRequest("http://localhost/api/prds/prd_001/generate") as any,
+      makeParams("prd_001") as any,
+    );
+
+    expect(response.status).toBe(409);
+    const body = await response.json();
+    expect(body.error).toContain("completed");
   });
 });
