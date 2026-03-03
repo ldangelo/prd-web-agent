@@ -26,3 +26,10 @@ fi
 if ! docker info >/dev/null 2>&1; then
   echo "⚠ Docker daemon is not running. Start Docker Desktop or the Docker service."
 fi
+
+# Start Dolt server for beads (bd) issue tracker if not already running
+if command -v bd >/dev/null 2>&1; then
+  if ! nc -z 127.0.0.1 3307 >/dev/null 2>&1; then
+    bd dolt start >/dev/null 2>&1 && echo "✓ Beads Dolt server started" || echo "⚠ Failed to start Beads Dolt server"
+  fi
+fi
