@@ -11,6 +11,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export function DeletePrdButton({
   currentUserId,
   onDeleted,
 }: DeletePrdButtonProps) {
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -49,8 +51,9 @@ export function DeletePrdButton({
     try {
       await deletePrd(prd.id);
       setModalOpen(false);
-      toast(`'${prd.title}' deleted.`);
+      toast.success(`'${prd.title}' deleted.`);
       onDeleted(prd.id);
+      router.push("/dashboard");
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to delete PRD.",
