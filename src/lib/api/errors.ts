@@ -5,6 +5,7 @@
  * The handleApiError function converts any thrown value into a proper API response.
  */
 import { apiError } from "./response";
+import logger from "@/lib/logger";
 
 export class ApiError extends Error {
   public readonly statusCode: number;
@@ -60,6 +61,7 @@ export function handleApiError(error: unknown) {
     return apiError(error.message, error.statusCode, error.details);
   }
 
-  // Do not expose internal error details to the client
+  // Log the full error server-side before returning the sanitised 500
+  logger.error({ error }, "Unhandled error in API route");
   return apiError("Internal server error", 500);
 }

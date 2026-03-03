@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { apiSuccess } from "@/lib/api/response";
 import { handleApiError, NotFoundError, ForbiddenError } from "@/lib/api/errors";
+import logger from "@/lib/logger";
 import { validateBody } from "@/lib/api/validate";
 import { triggerPrdGeneration } from "@/services/agent/prd-generator";
 
@@ -111,6 +112,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    logger.error({ error }, "Error in GET /api/prds");
     return handleApiError(error);
   }
 }

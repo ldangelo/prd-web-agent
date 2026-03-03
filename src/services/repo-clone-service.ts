@@ -1,6 +1,7 @@
 import { exec } from "child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
+import logger from "@/lib/logger";
 
 /**
  * Manages git repository clones on EFS for agent context.
@@ -104,8 +105,9 @@ export class RepoCloneService {
       await this.pullRepo(cloneDir);
     } catch (error: any) {
       // Non-fatal: log warning but continue with stale data
-      console.warn(
-        `[RepoCloneService] Sync failed for user ${userId}, project ${projectId}: ${error.message}`,
+      logger.warn(
+        { error, userId, projectId },
+        "RepoCloneService: sync failed, continuing with stale data",
       );
     }
 
@@ -159,8 +161,9 @@ export class RepoCloneService {
       try {
         await this.pullRepo(cloneDir);
       } catch (error: any) {
-        console.warn(
-          `[RepoCloneService] Periodic sync failed for user ${userId}, project ${projectId}: ${error.message}`,
+        logger.warn(
+          { error, userId, projectId },
+          "RepoCloneService: periodic sync failed",
         );
       }
     }, this.SYNC_INTERVAL_MS);
