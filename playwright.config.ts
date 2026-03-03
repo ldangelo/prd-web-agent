@@ -11,6 +11,8 @@ export default defineConfig({
   testDir: "./e2e",
   // Match only .spec.ts files (not the standalone runner script)
   testMatch: "**/*.spec.ts",
+  globalSetup: "./e2e/global-setup.ts",
+  globalTeardown: "./e2e/global-teardown.ts",
   fullyParallel: false,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
