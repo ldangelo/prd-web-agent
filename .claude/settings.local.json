@@ -13,7 +13,8 @@
       "Bash(gh run:*)",
       "Bash(gh pr:*)",
       "Bash(gh api:*)",
-      "Bash(jj:*)"
+      "Bash(jj:*)",
+      "Bash(bd create:*)"
     ]
   },
   "enabledPlugins": {
