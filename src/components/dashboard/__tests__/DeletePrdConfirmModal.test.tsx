@@ -33,14 +33,14 @@ describe("DeletePrdConfirmModal", () => {
     render(<DeletePrdConfirmModal {...defaultProps} />);
 
     expect(
-      screen.getByText(/permanently delete 'My Important PRD'/i),
+      screen.getByText(/delete 'My Important PRD'/i),
     ).toBeInTheDocument();
   });
 
-  it("shows 'This cannot be undone' warning text", () => {
+  it("shows 'cannot be undone' warning text", () => {
     render(<DeletePrdConfirmModal {...defaultProps} />);
 
-    expect(screen.getByText(/this cannot be undone/i)).toBeInTheDocument();
+    expect(screen.getByText(/cannot be undone/i)).toBeInTheDocument();
   });
 
   it("renders a Cancel button", () => {
@@ -129,7 +129,7 @@ describe("DeletePrdConfirmModal", () => {
     );
 
     expect(
-      screen.queryByText(/permanently delete/i),
+      screen.queryByText(/delete 'My Important PRD'/i),
     ).not.toBeInTheDocument();
   });
 

@@ -83,10 +83,11 @@ describe("DELETE /api/prds/[id]", () => {
       user: { id: "user_001", email: "test@example.com", role: "AUTHOR" },
     });
 
-    // Default: transaction executes the callback
+    // Default: transaction executes the callback.
+    // tx.prd.findFirst is the TOCTOU re-check inside the transaction.
     mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const tx = {
-        prd: { update: mockPrdUpdate },
+        prd: { update: mockPrdUpdate, findFirst: mockPrdFindFirst },
         auditEntry: { create: mockAuditEntryCreate },
       };
       return fn(tx);
@@ -128,14 +129,14 @@ describe("DELETE /api/prds/[id]", () => {
     expect(response.status).toBe(404);
   });
 
-  it("should return 403 when user is not the author", async () => {
+  it("should return 404 when user is not the author (existence oracle prevention)", async () => {
     mockPrdFindFirst.mockResolvedValue({ ...MOCK_PRD, authorId: "other_user" });
 
     const response = await DELETE(
       deleteRequest("prd_001"),
       makeParams("prd_001") as any,
     );
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(404);
   });
 
   it("should return 409 when PRD is not in DRAFT status", async () => {

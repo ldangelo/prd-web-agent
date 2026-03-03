@@ -17,6 +17,7 @@ jest.mock("@/lib/api/prds", () => ({
 
 jest.mock("sonner", () => ({
   toast: Object.assign(jest.fn(), {
+    success: jest.fn(),
     error: jest.fn(),
   }),
 }));
@@ -209,7 +210,7 @@ describe("DeletePrdButton", () => {
       fireEvent.click(confirmBtn);
 
       await waitFor(() => {
-        expect(toast).toHaveBeenCalledWith(
+        expect(toast.success).toHaveBeenCalledWith(
           expect.stringContaining("My Draft PRD"),
         );
       });

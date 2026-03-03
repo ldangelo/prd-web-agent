@@ -49,7 +49,7 @@ export function DeletePrdButton({
     try {
       await deletePrd(prd.id);
       setModalOpen(false);
-      toast(`'${prd.title}' deleted.`);
+      toast.success(`'${prd.title}' deleted.`);
       onDeleted(prd.id);
     } catch (err) {
       toast.error(

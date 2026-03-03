@@ -6,71 +6,61 @@
  *
  * Business rules:
  * - PRD must exist and not already be soft-deleted
- * - userId must be the PRD author
+ * - userId must be the PRD author (returns 404 for both not-found and wrong-owner)
  * - PRD must be in DRAFT status
- * - Soft-delete + audit entry in a single transaction
- * - Search index cleanup is non-blocking (failure is logged, not propagated)
+ * - Soft-delete + audit entry in a single transaction with re-check to prevent TOCTOU
+ * - Search index cleanup is fire-and-forget (failure is logged, not propagated)
  */
 import { prisma } from "@/lib/prisma";
 import { SearchService } from "@/services/search-service";
-import { apiError } from "@/lib/api/response";
 import logger from "@/lib/logger";
-import { NextResponse } from "next/server";
 
 const searchService = new SearchService();
 
-export interface DeletePrdResult {
-  errorResponse: NextResponse | null;
-  deleted: boolean;
-}
+// Discriminated union — no NextResponse in the service layer
+export type DeletePrdResult =
+  | { ok: true }
+  | { ok: false; code: 404 | 403 | 409; message: string };
 
 /**
  * Soft-delete a PRD.
  *
  * @param identifier - The PRD id to delete
  * @param userId - The user requesting deletion (must be the author)
- * @returns { errorResponse, deleted } — errorResponse is non-null on failure
+ * @returns DeletePrdResult discriminated union
  */
 export async function deletePrd(
   identifier: string,
   userId: string,
 ): Promise<DeletePrdResult> {
-  // Fetch PRD (only non-deleted records)
+  // Pre-flight: fetch PRD outside transaction for a fast early-exit
   const prd = await prisma.prd.findFirst({
     where: { id: identifier, isDeleted: false },
   });
 
-  if (!prd) {
-    return {
-      errorResponse: apiError(`PRD not found: "${identifier}"`, 404),
-      deleted: false,
-    };
+  // Return 404 for both not-found and wrong-owner to avoid existence oracle
+  if (!prd || prd.authorId !== userId) {
+    return { ok: false, code: 404, message: `PRD not found: "${identifier}"` };
   }
 
-  // Authorization
-  if (prd.authorId !== userId) {
-    return {
-      errorResponse: apiError(
-        "Forbidden: you are not the author of this PRD",
-        403,
-      ),
-      deleted: false,
-    };
-  }
-
-  // Status check — only DRAFT PRDs may be deleted
   if (prd.status !== "DRAFT") {
     return {
-      errorResponse: apiError(
-        `PRD cannot be deleted: status is "${prd.status}", expected "DRAFT"`,
-        409,
-      ),
-      deleted: false,
+      ok: false,
+      code: 409,
+      message: `PRD cannot be deleted: status is "${prd.status}", expected "DRAFT"`,
     };
   }
 
-  // Soft-delete + audit entry in a single transaction
+  // Soft-delete + audit entry in a single transaction.
+  // Re-check status inside the transaction to prevent TOCTOU race condition.
   await prisma.$transaction(async (tx) => {
+    const locked = await tx.prd.findFirst({
+      where: { id: identifier, isDeleted: false, status: "DRAFT" },
+    });
+    if (!locked) {
+      throw new Error("PRD is no longer deletable (concurrent modification)");
+    }
+
     await tx.prd.update({
       where: { id: identifier },
       data: {
@@ -93,17 +83,15 @@ export async function deletePrd(
     });
   });
 
-  // Non-blocking search index cleanup
-  try {
-    await searchService.deletePrdIndex(identifier);
-  } catch (searchErr) {
+  // Fire-and-forget search index cleanup — never blocks the response
+  searchService.deletePrdIndex(identifier).catch((searchErr) => {
     logger.warn(
       { error: searchErr, prdId: identifier },
       "Failed to remove PRD from search index after deletion; continuing",
     );
-  }
+  });
 
   logger.info({ prdId: identifier, userId }, "PRD soft-deleted");
 
-  return { errorResponse: null, deleted: true };
+  return { ok: true };
 }

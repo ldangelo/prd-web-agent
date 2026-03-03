@@ -79,10 +79,11 @@ describe("DELETE /api/internal/prd/delete", () => {
     jest.clearAllMocks();
     process.env.OPENCLAW_INTERNAL_TOKEN = VALID_TOKEN;
 
-    // Default: transaction executes the callback
+    // Default: transaction executes the callback.
+    // tx.prd.findFirst is the TOCTOU re-check inside the transaction.
     mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
       const tx = {
-        prd: { update: mockPrdUpdate },
+        prd: { update: mockPrdUpdate, findFirst: mockPrdFindFirst },
         auditEntry: { create: mockAuditEntryCreate },
       };
       return fn(tx);
@@ -188,14 +189,14 @@ describe("DELETE /api/internal/prd/delete", () => {
     expect(response.status).toBe(404);
   });
 
-  it("should return 403 when user is not the PRD author", async () => {
+  it("should return 404 when user is not the PRD author (existence oracle prevention)", async () => {
     mockPrdFindFirst.mockResolvedValue({ ...MOCK_PRD, authorId: "other_user" });
     const req = makeRequest(
       { identifier: "prd_001", userId: "user_001" },
       VALID_TOKEN,
     );
     const response = await DELETE(req);
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(404);
   });
 
   it("should return 409 when PRD status is not DRAFT", async () => {

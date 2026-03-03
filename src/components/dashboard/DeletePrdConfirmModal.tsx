@@ -70,11 +70,11 @@ export function DeletePrdConfirmModal({
       >
         <DialogHeader>
           <DialogTitle id={titleId}>
-            Permanently delete &apos;{prdTitle}&apos;? This cannot be undone.
+            Delete &apos;{prdTitle}&apos;?
           </DialogTitle>
           <DialogDescription id={descId}>
-            This action is irreversible. The PRD and all its history will be
-            permanently removed.
+            This draft will be removed from your workspace. This action cannot
+            be undone.
           </DialogDescription>
         </DialogHeader>
 

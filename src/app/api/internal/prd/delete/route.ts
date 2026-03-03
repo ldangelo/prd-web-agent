@@ -59,10 +59,10 @@ export async function DELETE(request: NextRequest) {
     const { identifier, userId } = parsed.data;
 
     // Delegate to shared service
-    const { errorResponse, deleted } = await deletePrd(identifier, userId);
-    if (errorResponse) return errorResponse;
+    const result = await deletePrd(identifier, userId);
+    if (!result.ok) return apiError(result.message, result.code);
 
-    return apiSuccess({ deleted, identifier });
+    return apiSuccess({ deleted: true, identifier });
   } catch (error) {
     logger.error({ error }, "Error in internal PRD delete");
     return handleApiError(error);

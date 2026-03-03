@@ -5,7 +5,7 @@
  */
 import { type NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { apiSuccess } from "@/lib/api/response";
+import { apiSuccess, apiError } from "@/lib/api/response";
 import { handleApiError } from "@/lib/api/errors";
 import { deletePrd } from "@/services/prd-delete-service";
 import logger from "@/lib/logger";
@@ -23,10 +23,10 @@ export async function DELETE(
     const userId = session.user.id;
     const { id } = await params;
 
-    const { errorResponse, deleted } = await deletePrd(id, userId);
-    if (errorResponse) return errorResponse;
+    const result = await deletePrd(id, userId);
+    if (!result.ok) return apiError(result.message, result.code);
 
-    return apiSuccess({ deleted, identifier: id });
+    return apiSuccess({ deleted: true, identifier: id });
   } catch (error) {
     logger.error({ error }, "Error in public PRD delete");
     return handleApiError(error);
