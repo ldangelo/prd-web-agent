@@ -114,7 +114,7 @@ export async function deletePrd(
     );
   }
 
-  logger.info({ prdId: identifier, userId }, "PRD soft-deleted");
+  logger.info({ prdId: prd.id, userId, projectId: prd.projectId }, "PRD soft-deleted");
 
   return { errorResponse: null, deleted: true };
 }
