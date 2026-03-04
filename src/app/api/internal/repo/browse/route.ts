@@ -13,13 +13,12 @@
  */
 import * as fs from "fs/promises";
 import * as nodePath from "path";
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { validateInternalToken } from "../../auth";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { handleApiError } from "@/lib/api/errors";
-import { RepoCloneService } from "@/services/repo-clone-service";
 import logger from "@/lib/logger";
-import { prisma } from "@/lib/prisma";
+import { ensureRepoClone } from "../_lib/ensure-clone";
 
 /** Directory names that are always excluded from the listing. */
 const EXCLUDED_DIRS = new Set([
@@ -29,8 +28,6 @@ const EXCLUDED_DIRS = new Set([
   "dist",
   "build",
 ]);
-
-const repoCloneService = new RepoCloneService();
 
 export interface BrowseEntry {
   name: string;
@@ -56,35 +53,12 @@ export async function GET(request: NextRequest): Promise<Response> {
       return apiError("Missing required query params: projectId, userId", 400);
     }
 
-    const cloneDir = repoCloneService.getCloneDir(userId, projectId);
-
-    // Verify the clone exists
-    try {
-      await fs.access(cloneDir);
-    } catch {
-      // Clone directory doesn't exist — attempt on-demand clone
-      const project = await prisma.project.findUnique({
-        where: { id: projectId },
-        select: { githubRepo: true },
-      });
-      if (!project?.githubRepo) {
-        return apiError("Repository not found or has no GitHub repo configured", 404);
-      }
-      const account = await prisma.account.findFirst({
-        where: { userId, provider: "github" },
-        select: { access_token: true },
-      });
-      if (!account?.access_token) {
-        return apiError("No GitHub OAuth token found for user", 401);
-      }
-      try {
-        await repoCloneService.cloneRepo(userId, projectId, project.githubRepo, account.access_token);
-        logger.info({ userId, projectId }, "Repo cloned on-demand for browse");
-      } catch (cloneErr) {
-        logger.error({ err: cloneErr, userId, projectId }, "On-demand repo clone failed");
-        return apiError("Failed to clone repository", 502);
-      }
+    // Ensure the clone exists (on-demand clone if needed)
+    const result = await ensureRepoClone(userId, projectId);
+    if (result instanceof NextResponse) {
+      return result;
     }
+    const { cloneDir } = result;
 
     // Resolve and validate the target path to prevent directory traversal
     const targetPath = nodePath.resolve(cloneDir, relativePath);

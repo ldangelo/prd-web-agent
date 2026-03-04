@@ -17,17 +17,14 @@
  */
 import * as fs from "fs/promises";
 import * as nodePath from "path";
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { validateInternalToken } from "../../auth";
 import { apiSuccess, apiError } from "@/lib/api/response";
 import { handleApiError } from "@/lib/api/errors";
-import { RepoCloneService } from "@/services/repo-clone-service";
 import logger from "@/lib/logger";
-import { prisma } from "@/lib/prisma";
+import { ensureRepoClone } from "../_lib/ensure-clone";
 
 const MAX_FILE_SIZE_BYTES = 100 * 1024; // 100 KB
-
-const repoCloneService = new RepoCloneService();
 
 export interface FileResponseData {
   content: string;
@@ -53,35 +50,12 @@ export async function GET(request: NextRequest): Promise<Response> {
       return apiError("Missing required query param: path", 400);
     }
 
-    const cloneDir = repoCloneService.getCloneDir(userId, projectId);
-
-    // Verify the clone exists
-    try {
-      await fs.access(cloneDir);
-    } catch {
-      // Clone directory doesn't exist — attempt on-demand clone
-      const project = await prisma.project.findUnique({
-        where: { id: projectId },
-        select: { githubRepo: true },
-      });
-      if (!project?.githubRepo) {
-        return apiError("Repository not found or has no GitHub repo configured", 404);
-      }
-      const account = await prisma.account.findFirst({
-        where: { userId, provider: "github" },
-        select: { access_token: true },
-      });
-      if (!account?.access_token) {
-        return apiError("No GitHub OAuth token found for user", 401);
-      }
-      try {
-        await repoCloneService.cloneRepo(userId, projectId, project.githubRepo, account.access_token);
-        logger.info({ userId, projectId }, "Repo cloned on-demand for file read");
-      } catch (cloneErr) {
-        logger.error({ err: cloneErr, userId, projectId }, "On-demand repo clone failed");
-        return apiError("Failed to clone repository", 502);
-      }
+    // Ensure the clone exists (on-demand clone if needed)
+    const result = await ensureRepoClone(userId, projectId);
+    if (result instanceof NextResponse) {
+      return result;
     }
+    const { cloneDir } = result;
 
     // Resolve the absolute file path and guard against directory traversal.
     // nodePath.resolve handles ".." components, so we can check the result.
@@ -104,7 +78,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     }
 
     // Stat the file to check size and confirm it is a regular file
-    let stat: fs.FileHandle | Awaited<ReturnType<typeof fs.stat>>;
+    let stat: Awaited<ReturnType<typeof fs.stat>>;
     try {
       stat = await fs.stat(absoluteFilePath);
     } catch {
@@ -112,11 +86,11 @@ export async function GET(request: NextRequest): Promise<Response> {
     }
 
     // Reject directories
-    if ((stat as Awaited<ReturnType<typeof fs.stat>>).isDirectory()) {
+    if (stat.isDirectory()) {
       return apiError("Path is a directory, not a file", 400);
     }
 
-    const size = (stat as Awaited<ReturnType<typeof fs.stat>>).size;
+    const size = stat.size;
 
     if (size > MAX_FILE_SIZE_BYTES) {
       logger.info(

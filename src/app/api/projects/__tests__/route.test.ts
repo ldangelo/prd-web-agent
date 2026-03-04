@@ -242,4 +242,21 @@ describe("POST /api/projects", () => {
     expect(response.status).toBe(422);
     expect(body).toHaveProperty("error");
   });
+
+  it("should NOT call cloneRepo when no GitHub OAuth token is available", async () => {
+    // Simulate user with no GitHub account linked
+    mockAccountFindFirst.mockResolvedValue(null);
+
+    const { RepoCloneService } = jest.requireMock("@/services/repo-clone-service");
+    const mockInstance = RepoCloneService.mock.results[0]?.value;
+
+    const response = await POST(
+      postRequest({ name: "No Token Project", githubRepo: "org/no-token-repo" }) as any,
+    );
+
+    expect(response.status).toBe(201);
+    if (mockInstance) {
+      expect(mockInstance.cloneRepo).not.toHaveBeenCalled();
+    }
+  });
 });

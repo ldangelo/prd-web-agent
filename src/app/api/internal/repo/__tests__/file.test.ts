@@ -63,6 +63,8 @@ import { GET } from "../file/route";
 const VALID_TOKEN = "test-internal-token";
 const CLONE_DIR = "/efs/repos/user_001/proj_001";
 const FILE_CONTENT = "export const hello = 'world';";
+const GITHUB_REPO = "https://github.com/org/repo.git";
+const OAUTH_TOKEN = "gho_test";
 
 function makeRequest(
   params: Record<string, string>,
@@ -103,8 +105,8 @@ beforeEach(() => {
   // Default: file content
   mockFsReadFile.mockResolvedValue(FILE_CONTENT);
   // Default on-demand clone helpers (only used when access fails)
-  mockProjectFindUnique.mockResolvedValue({ githubRepo: "https://github.com/org/repo.git" });
-  mockAccountFindFirst.mockResolvedValue({ access_token: "gho_test" });
+  mockProjectFindUnique.mockResolvedValue({ githubRepo: GITHUB_REPO });
+  mockAccountFindFirst.mockResolvedValue({ access_token: OAUTH_TOKEN });
   mockCloneRepo.mockResolvedValue(undefined);
 });
 
@@ -182,7 +184,12 @@ describe("GET /api/internal/repo/file", () => {
       VALID_TOKEN,
     );
     const res = await GET(req);
-    expect(mockCloneRepo).toHaveBeenCalled();
+    expect(mockCloneRepo).toHaveBeenCalledWith(
+      "user_001",
+      "proj_001",
+      GITHUB_REPO,
+      OAUTH_TOKEN,
+    );
     expect(res.status).toBe(200);
   });
 
@@ -195,6 +202,18 @@ describe("GET /api/internal/repo/file", () => {
     );
     const res = await GET(req);
     expect(res.status).toBe(404);
+  });
+
+  it("returns 401 when clone directory does not exist and no OAuth token is available", async () => {
+    mockFsAccess.mockRejectedValue(new Error("ENOENT"));
+    mockAccountFindFirst.mockResolvedValue(null);
+    const req = makeRequest(
+      { projectId: "proj_001", userId: "user_001", path: "src/index.ts" },
+      VALID_TOKEN,
+    );
+    const res = await GET(req);
+    expect(res.status).toBe(401);
+    expect(mockCloneRepo).not.toHaveBeenCalled();
   });
 
   it("returns 502 when on-demand clone fails", async () => {
