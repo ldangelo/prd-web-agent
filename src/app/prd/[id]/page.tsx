@@ -125,7 +125,7 @@ export default function PrdDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <StatusBadge status={displayStatus} />
-          <h1 className="text-2xl font-bold">{title || "PRD Detail"}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-2xl font-bold" title={title || "PRD Detail"}>{title || "PRD Detail"}</h1>
         </div>
         <div className="flex items-center gap-2">
           <TransitionButtons
@@ -177,8 +177,8 @@ export default function PrdDetailPage() {
           <>
             {/* Generation error state */}
             {generationError && (
-              <div className="mb-4 rounded border border-red-200 bg-red-50 p-4">
-                <p className="text-sm font-medium text-red-800">
+              <div className="mb-4 rounded border border-red-500/30 bg-red-500/10 p-4">
+                <p className="text-sm font-medium text-red-400">
                   Generation failed: {generationError}
                 </p>
                 <button
@@ -193,9 +193,9 @@ export default function PrdDetailPage() {
             {/* Generation in progress */}
             {isGenerating && (
               <div className="mb-4">
-                <div className="flex items-center gap-2 rounded border border-blue-200 bg-blue-50 p-3">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                  <span className="text-sm font-medium text-blue-800">
+                <div className="flex items-center gap-2 rounded border border-blue-500/30 bg-blue-500/10 p-3">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+                  <span className="text-sm font-medium text-blue-400">
                     Generating PRD content...
                   </span>
                 </div>

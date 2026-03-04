@@ -23,6 +23,7 @@ export default function NewPrdPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectId, setProjectId] = useState("");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -66,6 +67,10 @@ export default function NewPrdPage() {
       setError("Please select a project");
       return;
     }
+    if (!title.trim()) {
+      setError("Please enter a title");
+      return;
+    }
 
     setStreamingText("");
     setIsSubmitting(true);
@@ -78,7 +83,7 @@ export default function NewPrdPage() {
       const res = await fetch("/api/prds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, description }),
+        body: JSON.stringify({ projectId, title: title.trim(), description }),
       });
 
       if (!res.ok) {
@@ -228,6 +233,20 @@ export default function NewPrdPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="prd-title" className="block text-sm font-medium">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="prd-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Short name for this PRD"
+              className="mt-1 block w-full rounded border border-input bg-background p-2 text-foreground placeholder:text-muted-foreground"
+            />
           </div>
 
           <div>
