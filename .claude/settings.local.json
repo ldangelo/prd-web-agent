@@ -14,7 +14,8 @@
       "Bash(gh pr:*)",
       "Bash(gh api:*)",
       "Bash(jj:*)",
-      "Bash(bd create:*)"
+      "Bash(bd create:*)",
+      "Bash(npm test:*)"
     ]
   },
   "enabledPlugins": {

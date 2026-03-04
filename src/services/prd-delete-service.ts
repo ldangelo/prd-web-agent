@@ -13,13 +13,12 @@
  */
 import { prisma } from "@/lib/prisma";
 import { SearchService } from "@/services/search-service";
-import { RepoCloneService } from "@/services/repo-clone-service";
+import { repoCloneService } from "@/lib/repo-clone-service";
 import { apiError } from "@/lib/api/response";
 import logger from "@/lib/logger";
 import { NextResponse } from "next/server";
 
 const searchService = new SearchService();
-const repoCloneService = new RepoCloneService();
 
 export interface DeletePrdResult {
   errorResponse: NextResponse | null;
@@ -115,7 +114,7 @@ export async function deletePrd(
     );
   }
 
-  logger.info({ prdId: identifier, userId }, "PRD soft-deleted");
+  logger.info({ prdId: prd.id, userId, projectId: prd.projectId }, "PRD soft-deleted");
 
   return { errorResponse: null, deleted: true };
 }
