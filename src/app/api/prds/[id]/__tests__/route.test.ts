@@ -35,6 +35,14 @@ jest.mock("@/services/search-service", () => ({
   })),
 }));
 
+const mockRemoveClone = jest.fn();
+
+jest.mock("@/services/repo-clone-service", () => ({
+  RepoCloneService: jest.fn().mockImplementation(() => ({
+    removeClone: (...args: unknown[]) => mockRemoveClone(...args),
+  })),
+}));
+
 const mockRequireAuth = jest.fn();
 
 jest.mock("@/lib/auth", () => ({
@@ -67,6 +75,7 @@ const MOCK_PRD = {
   id: "prd_001",
   title: "My Draft PRD",
   authorId: "user_001",
+  projectId: "proj_001",
   status: "DRAFT",
   isDeleted: false,
 };
@@ -96,6 +105,7 @@ describe("DELETE /api/prds/[id]", () => {
     mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD, isDeleted: true });
     mockAuditEntryCreate.mockResolvedValue({});
     mockDeletePrdIndex.mockResolvedValue(undefined);
+    mockRemoveClone.mockResolvedValue(undefined);
   });
 
   // -------------------------------------------------------------------------
