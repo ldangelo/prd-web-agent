@@ -36,6 +36,7 @@ const mockPrdCoAuthorFindFirst = jest.fn();
 const mockPrdCoAuthorFindUnique = jest.fn();
 const mockNotificationCreateMany = jest.fn();
 const mockGlobalSettingsFindUnique = jest.fn();
+const mockAccountFindFirst = jest.fn();
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -80,7 +81,16 @@ jest.mock("@/lib/prisma", () => ({
     globalSettings: {
       findUnique: (...args: unknown[]) => mockGlobalSettingsFindUnique(...args),
     },
+    account: {
+      findFirst: (...args: unknown[]) => mockAccountFindFirst(...args),
+    },
   },
+}));
+
+jest.mock("@/services/repo-clone-service", () => ({
+  RepoCloneService: jest.fn().mockImplementation(() => ({
+    cloneRepo: jest.fn().mockResolvedValue(undefined),
+  })),
 }));
 
 // --- Auth mocks ---
@@ -292,6 +302,9 @@ describe("E2E: Full PRD Lifecycle", () => {
 
     // Default: notifications succeed
     mockNotificationCreateMany.mockResolvedValue({ count: 0 });
+
+    // Default: no GitHub OAuth token (repo clone skipped)
+    mockAccountFindFirst.mockResolvedValue(null);
   });
 
   it("should complete the full lifecycle: create project -> create PRD -> version -> IN_REVIEW -> comment -> resolve -> APPROVED -> submit -> SUBMITTED", async () => {
