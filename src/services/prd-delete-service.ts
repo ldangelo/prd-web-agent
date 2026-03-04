@@ -10,9 +10,11 @@
  * - PRD must be in DRAFT status
  * - Soft-delete + audit entry in a single transaction
  * - Search index cleanup is non-blocking (failure is logged, not propagated)
+ * - Repo clone cleanup is non-blocking (failure is logged, not propagated)
  */
 import { prisma } from "@/lib/prisma";
 import { SearchService } from "@/services/search-service";
+import { repoCloneService } from "@/lib/repo-clone-service";
 import { apiError } from "@/lib/api/response";
 import logger from "@/lib/logger";
 import { NextResponse } from "next/server";
@@ -103,7 +105,17 @@ export async function deletePrd(
     );
   }
 
-  logger.info({ prdId: identifier, userId }, "PRD soft-deleted");
+  // Non-blocking agent working directory cleanup
+  try {
+    await repoCloneService.removeClone(userId, prd.projectId);
+  } catch (repoErr) {
+    logger.warn(
+      { error: repoErr, prdId: identifier, projectId: prd.projectId, userId },
+      "Failed to remove agent repo clone after PRD deletion; continuing",
+    );
+  }
+
+  logger.info({ prdId: identifier, userId, projectId: prd.projectId }, "PRD soft-deleted");
 
   return { errorResponse: null, deleted: true };
 }

@@ -1,0 +1,41 @@
+# Production environment overrides for prd-web-agent.
+# Applied on top of values.yaml during production Helm deployments.
+
+replicaCount: 3
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 1024Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=86400
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+  hosts:
+    - host: prd-web-agent.prod.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+env:
+  NODE_ENV: production
+  NEXT_TELEMETRY_DISABLED: "1"
+  OTEL_SERVICE_NAME: prd-web-agent
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production

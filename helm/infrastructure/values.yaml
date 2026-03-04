@@ -1,0 +1,66 @@
+# Infrastructure umbrella chart values
+# Deploys PostgreSQL, Redis, and OpenSearch as dependencies
+
+postgresql:
+  enabled: true
+  image:
+    tag: "15"
+  auth:
+    username: prd_web_agent
+    database: prd_web_agent
+    # Set password via: --set postgresql.auth.password=<secret>
+    existingSecret: ""
+  primary:
+    persistence:
+      enabled: true
+      storageClass: gp3
+      size: 20Gi
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+
+redis:
+  enabled: true
+  image:
+    tag: "7"
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      storageClass: gp3
+      size: 5Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+opensearch:
+  enabled: true
+  singleNode: true
+  persistence:
+    enabled: true
+    storageClass: gp3
+    size: 50Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  extraEnvs:
+    - name: DISABLE_SECURITY_PLUGIN
+      value: "true"
+  config:
+    opensearch.yml: |
+      cluster.name: prd-web-agent
+      network.host: 0.0.0.0
