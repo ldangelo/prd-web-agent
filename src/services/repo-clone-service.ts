@@ -1,6 +1,7 @@
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
+import logger from "@/lib/logger";
 
 /**
  * Manages git repository clones on EFS for agent context.
@@ -68,12 +69,15 @@ export class RepoCloneService {
     );
 
     try {
-      await this.execAsync(`git clone ${authedUrl} ${cloneDir}`, {
+      await this.execFileAsync("git", ["clone", authedUrl, cloneDir], {
         timeout: 120_000,
       });
     } catch (error: any) {
-      // Surface clear authentication errors
-      const message = error?.message ?? "";
+      // Redact token from any error messages before propagating
+      const message = (error?.message ?? "").replace(
+        /x-access-token:[^@]+@/g,
+        "x-access-token:[REDACTED]@",
+      );
       if (
         message.includes("Authentication failed") ||
         message.includes("could not read Username") ||
@@ -81,10 +85,16 @@ export class RepoCloneService {
         message.includes("401")
       ) {
         throw new Error(
-          `Authentication failed for repository clone. The GitHub token may be expired or revoked. Original error: ${message}`,
+          `Authentication failed for repository clone. The GitHub token may be expired or revoked.`,
         );
       }
-      throw error;
+      // Re-throw with sanitised message
+      const sanitised = new Error(message);
+      sanitised.stack = error.stack?.replace(
+        /x-access-token:[^@]+@/g,
+        "x-access-token:[REDACTED]@",
+      );
+      throw sanitised;
     }
 
     this.startPeriodicSync(userId, projectId, cloneDir);
@@ -104,8 +114,9 @@ export class RepoCloneService {
       await this.pullRepo(cloneDir);
     } catch (error: any) {
       // Non-fatal: log warning but continue with stale data
-      console.warn(
-        `[RepoCloneService] Sync failed for user ${userId}, project ${projectId}: ${error.message}`,
+      logger.warn(
+        { userId, projectId, error },
+        "RepoCloneService: sync failed",
       );
     }
 
@@ -159,8 +170,9 @@ export class RepoCloneService {
       try {
         await this.pullRepo(cloneDir);
       } catch (error: any) {
-        console.warn(
-          `[RepoCloneService] Periodic sync failed for user ${userId}, project ${projectId}: ${error.message}`,
+        logger.warn(
+          { userId, projectId, error },
+          "RepoCloneService: periodic sync failed",
         );
       }
     }, this.SYNC_INTERVAL_MS);
@@ -177,15 +189,16 @@ export class RepoCloneService {
   }
 
   private pullRepo(cloneDir: string): Promise<string> {
-    return this.execAsync("git pull --ff-only", { cwd: cloneDir });
+    return this.execFileAsync("git", ["pull", "--ff-only"], { cwd: cloneDir });
   }
 
-  private execAsync(
-    command: string,
+  private execFileAsync(
+    file: string,
+    args: string[],
     options: Record<string, any> = {},
   ): Promise<string> {
     return new Promise((resolve, reject) => {
-      exec(command, options, (error, stdout, _stderr) => {
+      execFile(file, args, options, (error, stdout, _stderr) => {
         if (error) {
           reject(error);
         } else {

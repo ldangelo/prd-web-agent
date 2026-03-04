@@ -65,7 +65,9 @@ persistence:
 env:
   DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/prd_web_agent"
   REDIS_URL: "redis://redis:6379"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://signoz-otel-collector.monitoring.svc.cluster.local:4318"
+  OTEL_SERVICE_NAME: "prd-web-agent"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=staging"
   NODE_ENV: "production"
   NEXT_TELEMETRY_DISABLED: "1"
 

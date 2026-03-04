@@ -1,0 +1,5 @@
+apiVersion: v2
+name: namespaces
+description: Kubernetes namespaces, resource quotas, and network policies for prd-web-agent
+type: application
+version: 0.1.0

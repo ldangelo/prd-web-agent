@@ -1,0 +1,19 @@
+Infrastructure chart deployed successfully.
+
+Services available within the cluster:
+
+  PostgreSQL:
+    Host: {{ .Release.Name }}-postgresql.<namespace>.svc.cluster.local
+    Port: 5432
+    Database: {{ .Values.postgresql.auth.database }}
+    User: {{ .Values.postgresql.auth.username }}
+
+  Redis:
+    Host: {{ .Release.Name }}-redis-master.<namespace>.svc.cluster.local
+    Port: 6379
+
+  OpenSearch:
+    Host: {{ .Release.Name }}-opensearch.<namespace>.svc.cluster.local
+    Port: 9200
+
+Update prd-web-agent DATABASE_URL and REDIS_URL accordingly.

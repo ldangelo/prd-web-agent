@@ -3,6 +3,8 @@ name: CI/CD - PRD Web Agent
 on:
   push:
     branches: [main]
+    tags:
+      - "v*"
   pull_request:
     branches: [main]
 
@@ -16,6 +18,7 @@ env:
 permissions:
   contents: read
   id-token: write
+  security-events: write  # Required for uploading SARIF results
 
 jobs:
   lint:
@@ -70,9 +73,11 @@ jobs:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
     needs: [lint, test]
+    # Build and push ONLY on main branch pushes; tags deploy the already-built image
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
+      full_image: ${{ steps.meta.outputs.full_image }}
     steps:
       - uses: actions/checkout@v4
 
@@ -89,28 +94,79 @@ jobs:
       - name: Set image metadata
         id: meta
         run: |
-          IMAGE_TAG="${{ github.sha }}"
-          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
-          echo "full_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          SHA_TAG="sha-${{ github.sha }}"
+          BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          FULL_IMAGE="${REGISTRY}/${{ env.ECR_REPOSITORY }}:${SHA_TAG}"
+
+          echo "image_tag=${SHA_TAG}" >> "$GITHUB_OUTPUT"
+          echo "full_image=${FULL_IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "build_date=${BUILD_DATE}" >> "$GITHUB_OUTPUT"
+
+          # Tags: sha-<commit> and latest
+          echo "tags<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${FULL_IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "${REGISTRY}/${{ env.ECR_REPOSITORY }}:latest" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU (multi-platform support)
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image to ECR
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ steps.meta.outputs.full_image }}
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            BUILD_DATE=${{ steps.meta.outputs.build_date }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ needs.build.outputs.full_image }}
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Upload Trivy SARIF results to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-container
 
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [build, security-scan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: staging
     steps:
@@ -151,3 +207,129 @@ jobs:
           kubectl rollout status deployment/${{ env.HELM_RELEASE }} \
             --namespace ${{ env.HELM_NAMESPACE }} \
             --timeout=300s
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    # Triggered by version tags; the image was already built and scanned when
+    # the tagged commit was merged to main. Deploys using sha-<commit> tag from ECR.
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Resolve image tag from commit SHA
+        id: image
+        run: |
+          # The tagged commit was already built when it landed on main.
+          # Reference the pre-built image by its sha-prefixed tag.
+          IMAGE_TAG="sha-${{ github.sha }}"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "full_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify image exists in ECR
+        run: |
+          aws ecr describe-images \
+            --repository-name ${{ env.ECR_REPOSITORY }} \
+            --image-ids imageTag=${{ steps.image.outputs.image_tag }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Deploy with Helm to production
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE }} \
+            ./helm/prd-web-agent \
+            --namespace production \
+            --create-namespace \
+            --set image.repository=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }} \
+            --set image.tag=${{ steps.image.outputs.image_tag }} \
+            --values ./helm/prd-web-agent/values.yaml \
+            --values ./helm/prd-web-agent/values-production.yaml \
+            --wait \
+            --timeout 10m
+
+      - name: Verify production deployment
+        run: |
+          kubectl rollout status deployment/${{ env.HELM_RELEASE }} \
+            --namespace production \
+            --timeout=600s
+
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [lint, test, build, security-scan, deploy-staging, deploy-production]
+    if: |
+      always() &&
+      (
+        needs.lint.result == 'failure' ||
+        needs.test.result == 'failure' ||
+        needs.build.result == 'failure' ||
+        needs.security-scan.result == 'failure' ||
+        needs.deploy-staging.result == 'failure' ||
+        needs.deploy-production.result == 'failure'
+      )
+    steps:
+      - name: Determine failed jobs
+        id: failed
+        run: |
+          FAILED_JOBS=""
+          for job in lint test build security-scan deploy-staging deploy-production; do
+            result_var="needs_${job//-/_}_result"
+            case "$job" in
+              lint)         result="${{ needs.lint.result }}" ;;
+              test)         result="${{ needs.test.result }}" ;;
+              build)        result="${{ needs.build.result }}" ;;
+              security-scan) result="${{ needs.security-scan.result }}" ;;
+              deploy-staging) result="${{ needs.deploy-staging.result }}" ;;
+              deploy-production) result="${{ needs.deploy-production.result }}" ;;
+            esac
+            if [ "$result" = "failure" ]; then
+              FAILED_JOBS="${FAILED_JOBS}${job}, "
+            fi
+          done
+          echo "failed_jobs=${FAILED_JOBS%, }" >> "$GITHUB_OUTPUT"
+
+      - name: Post Slack notification
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "CI/CD pipeline failure on *prd-web-agent*",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": { "type": "plain_text", "text": "Pipeline Failure - prd-web-agent", "emoji": false }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    { "type": "mrkdwn", "text": "*Repository:*\n${{ github.repository }}" },
+                    { "type": "mrkdwn", "text": "*Branch/Tag:*\n${{ github.ref_name }}" },
+                    { "type": "mrkdwn", "text": "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>" },
+                    { "type": "mrkdwn", "text": "*Failed jobs:*\n${{ steps.failed.outputs.failed_jobs }}" },
+                    { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" },
+                    { "type": "mrkdwn", "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>" }
+                  ]
+                }
+              ]
+            }

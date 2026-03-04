@@ -1,0 +1,67 @@
+# SigNoz Helm values override
+# Deploy via: helm upgrade --install signoz signoz/signoz -n monitoring --create-namespace -f helm/signoz/values.yaml
+
+global:
+  storageClass: gp3
+
+clickhouse:
+  persistence:
+    enabled: true
+    storageClass: gp3
+    size: 50Gi
+
+  # 30-day data retention
+  cold_storage_type: ""
+  ttl: 2592000  # 30 days in seconds
+
+queryService:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+frontend:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  ingress:
+    enabled: true
+    className: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internal
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/ssl-redirect: "443"
+    hosts:
+      - host: signoz.internal.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+# OTel collector receives traces/metrics/logs from app namespaces
+otelCollector:
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+otelCollectorMetrics:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi

@@ -219,7 +219,7 @@ export default function NewPrdPage() {
               id="project-select"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="mt-1 block w-full rounded border border-input p-2"
+              className="mt-1 block w-full rounded border border-input bg-background p-2 text-foreground"
             >
               <option value="">Select a project...</option>
               {projects.map((p) => (
@@ -240,7 +240,7 @@ export default function NewPrdPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="Briefly describe what this PRD should cover..."
-              className="mt-1 block w-full rounded border border-input p-2"
+              className="mt-1 block w-full rounded border border-input bg-background p-2 text-foreground placeholder:text-muted-foreground"
             />
           </div>
 
