@@ -11,6 +11,7 @@
 
 const mockProjectFindMany = jest.fn();
 const mockProjectCreate = jest.fn();
+const mockAccountFindFirst = jest.fn();
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -18,7 +19,16 @@ jest.mock("@/lib/prisma", () => ({
       findMany: (...args: unknown[]) => mockProjectFindMany(...args),
       create: (...args: unknown[]) => mockProjectCreate(...args),
     },
+    account: {
+      findFirst: (...args: unknown[]) => mockAccountFindFirst(...args),
+    },
   },
+}));
+
+jest.mock("@/services/repo-clone-service", () => ({
+  RepoCloneService: jest.fn().mockImplementation(() => ({
+    cloneRepo: jest.fn().mockResolvedValue(undefined),
+  })),
 }));
 
 const mockRequireAuth = jest.fn();
@@ -149,6 +159,9 @@ describe("POST /api/projects", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    // Default: user has a GitHub OAuth token
+    mockAccountFindFirst.mockResolvedValue({ access_token: "gho_test_token" });
   });
 
   it("should create a project and return 201 for authenticated user", async () => {

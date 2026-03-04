@@ -13,11 +13,13 @@
  */
 import { prisma } from "@/lib/prisma";
 import { SearchService } from "@/services/search-service";
+import { RepoCloneService } from "@/services/repo-clone-service";
 import { apiError } from "@/lib/api/response";
 import logger from "@/lib/logger";
 import { NextResponse } from "next/server";
 
 const searchService = new SearchService();
+const repoCloneService = new RepoCloneService();
 
 export interface DeletePrdResult {
   errorResponse: NextResponse | null;
@@ -100,6 +102,16 @@ export async function deletePrd(
     logger.warn(
       { error: searchErr, prdId: identifier },
       "Failed to remove PRD from search index after deletion; continuing",
+    );
+  }
+
+  // Non-blocking agent working directory cleanup
+  try {
+    await repoCloneService.removeClone(userId, prd.projectId);
+  } catch (repoErr) {
+    logger.warn(
+      { error: repoErr, prdId: identifier, projectId: prd.projectId, userId },
+      "Failed to remove agent repo clone after PRD deletion; continuing",
     );
   }
 

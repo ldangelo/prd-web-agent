@@ -12,6 +12,10 @@ import { apiSuccess } from "@/lib/api/response";
 import { handleApiError, ApiError } from "@/lib/api/errors";
 import { validateBody } from "@/lib/api/validate";
 import { Prisma } from "@prisma/client";
+import { RepoCloneService } from "@/services/repo-clone-service";
+import logger from "@/lib/logger";
+
+const repoCloneService = new RepoCloneService();
 
 // ---------------------------------------------------------------------------
 // Validation schemas
@@ -92,6 +96,19 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Trigger async repo clone — non-blocking, failure is logged not thrown
+    const account = await prisma.account.findFirst({
+      where: { userId: session.user.id, provider: "github" },
+      select: { access_token: true },
+    });
+    if (account?.access_token) {
+      repoCloneService
+        .cloneRepo(session.user.id, project.id, data.githubRepo, account.access_token)
+        .catch((err) => {
+          logger.warn({ err, projectId: project.id }, "projects: async repo clone failed");
+        });
+    }
 
     return apiSuccess(project, 201);
   } catch (error) {
