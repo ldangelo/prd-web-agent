@@ -136,8 +136,8 @@ export class RepoCloneService {
     const cloneDir = this.getCloneDir(userId, projectId);
     try {
       await fs.rm(cloneDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors
+    } catch (err) {
+      logger.warn({ error: err, userId, projectId }, "Failed to remove repo clone directory; ignoring");
     }
   }
 

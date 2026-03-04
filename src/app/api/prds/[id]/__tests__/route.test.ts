@@ -37,10 +37,10 @@ jest.mock("@/services/search-service", () => ({
 
 const mockRemoveClone = jest.fn();
 
-jest.mock("@/services/repo-clone-service", () => ({
-  RepoCloneService: jest.fn().mockImplementation(() => ({
+jest.mock("@/lib/repo-clone-service", () => ({
+  repoCloneService: {
     removeClone: (...args: unknown[]) => mockRemoveClone(...args),
-  })),
+  },
 }));
 
 const mockRequireAuth = jest.fn();
