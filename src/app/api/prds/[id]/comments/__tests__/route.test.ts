@@ -2,7 +2,7 @@
  * Comments API route tests.
  *
  * Tests for GET /api/prds/[id]/comments, POST /api/prds/[id]/comments,
- * and PUT /api/prds/[id]/comments/[commentId]/resolve.
+ * and PATCH /api/prds/[id]/comments/[commentId]/resolve.
  */
 
 // ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ jest.mock("@/services/comment-service", () => ({
 // ---------------------------------------------------------------------------
 
 import { GET, POST } from "../route";
-import { PUT } from "../[commentId]/resolve/route";
+import { PATCH } from "../[commentId]/resolve/route";
 import { UnauthorizedError, ForbiddenError, NotFoundError } from "@/lib/api/errors";
 
 // ---------------------------------------------------------------------------
@@ -255,10 +255,10 @@ describe("POST /api/prds/[id]/comments", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: PUT /api/prds/[id]/comments/[commentId]/resolve
+// Tests: PATCH /api/prds/[id]/comments/[commentId]/resolve
 // ---------------------------------------------------------------------------
 
-describe("PUT /api/prds/[id]/comments/[commentId]/resolve", () => {
+describe("PATCH /api/prds/[id]/comments/[commentId]/resolve", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAuth.mockResolvedValue({
@@ -272,9 +272,9 @@ describe("PUT /api/prds/[id]/comments/[commentId]/resolve", () => {
   });
 
   it("should resolve a comment and return 200", async () => {
-    const response = await PUT(
+    const response = await PATCH(
       new Request("http://localhost/api/prds/prd_001/comments/comment_001/resolve", {
-        method: "PUT",
+        method: "PATCH",
       }) as any,
       makeResolveParams("prd_001", "comment_001") as any,
     );
@@ -293,9 +293,9 @@ describe("PUT /api/prds/[id]/comments/[commentId]/resolve", () => {
       new NotFoundError("Comment not found"),
     );
 
-    const response = await PUT(
+    const response = await PATCH(
       new Request("http://localhost/api/prds/prd_001/comments/nonexistent/resolve", {
-        method: "PUT",
+        method: "PATCH",
       }) as any,
       makeResolveParams("prd_001", "nonexistent") as any,
     );
@@ -308,9 +308,9 @@ describe("PUT /api/prds/[id]/comments/[commentId]/resolve", () => {
       new ForbiddenError("Only the PRD author, comment author, or an admin can resolve comments"),
     );
 
-    const response = await PUT(
+    const response = await PATCH(
       new Request("http://localhost/api/prds/prd_001/comments/comment_001/resolve", {
-        method: "PUT",
+        method: "PATCH",
       }) as any,
       makeResolveParams("prd_001", "comment_001") as any,
     );
@@ -323,9 +323,9 @@ describe("PUT /api/prds/[id]/comments/[commentId]/resolve", () => {
       new UnauthorizedError("Authentication required"),
     );
 
-    const response = await PUT(
+    const response = await PATCH(
       new Request("http://localhost/api/prds/prd_001/comments/comment_001/resolve", {
-        method: "PUT",
+        method: "PATCH",
       }) as any,
       makeResolveParams("prd_001", "comment_001") as any,
     );

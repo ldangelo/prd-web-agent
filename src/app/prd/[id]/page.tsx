@@ -21,6 +21,7 @@ import { StatusBadge } from "@/components/workflow/StatusBadge";
 import { TransitionButtons } from "@/components/workflow/TransitionButtons";
 import { SubmissionModal } from "@/components/submission/SubmissionModal";
 import { usePrdGeneration } from "@/hooks/usePrdGeneration";
+import { CommentsList } from "@/components/comments";
 
 // ---------------------------------------------------------------------------
 // Status mapping: Prisma enum ↔ display strings used by workflow components
@@ -234,10 +235,8 @@ export default function PrdDetailPage() {
         )}
 
         {activeTab === "Comments" && (
-          <div>
-            <p className="text-muted-foreground">
-              Comments and review feedback will appear here.
-            </p>
+          <div className="px-1 py-4">
+            <CommentsList prdId={prdId} />
           </div>
         )}
 

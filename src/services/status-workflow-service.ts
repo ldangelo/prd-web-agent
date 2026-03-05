@@ -3,7 +3,11 @@
  *
  * Implements a state machine for PRD status transitions with:
  * - Transition validation (only allowed paths)
- * - Authorization checks (author/co-author for submit, reviewer/admin for approve)
+ * - Authorization checks using project-level roles (ProjectMember.role)
+ *   SUBMITTER → can submit DRAFT→IN_REVIEW
+ *   APPROVER  → can approve/reject (IN_REVIEW→APPROVED or IN_REVIEW→DRAFT)
+ *   project ADMIN → can do anything a project admin needs
+ *   System ADMIN  → overrides all checks
  * - Reviewer auto-assignment notifications on IN_REVIEW (TASK-028)
  * - Unresolved comment blocking on APPROVED (TASK-031)
  * - Audit trail logging on every transition (TASK-034)
@@ -97,36 +101,44 @@ export class StatusWorkflowService {
       );
     }
 
-    // 3. Fetch the acting user
+    // 3. Fetch the acting user and their project membership
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    const userRole = user?.role;
-    const isAdmin = userRole === "ADMIN";
+    const systemRole = user?.role;
+    const isSystemAdmin = systemRole === "ADMIN";
 
-    // 4. Authorization checks
-    await this.checkAuthorization(prd, userId, userRole, isAdmin, fromStatus, toStatus);
+    // 4. Fetch project membership for project-level role checks
+    const membership = isSystemAdmin
+      ? null
+      : await prisma.projectMember.findUnique({
+          where: { projectId_userId: { projectId: prd.projectId, userId } },
+        });
+    const projectRole = membership?.role ?? null;
 
-    // 5. Rejection requires a comment
+    // 5. Authorization checks
+    await this.checkAuthorization(prd, userId, isSystemAdmin, projectRole, fromStatus, toStatus);
+
+    // 6. Rejection requires a comment
     if (fromStatus === "IN_REVIEW" && toStatus === "DRAFT" && !comment) {
       throw new ValidationError("Comment is required when rejecting a PRD");
     }
 
-    // 6. TASK-031: Check unresolved comments when approving
+    // 7. TASK-031: Check unresolved comments when approving
     if (toStatus === "APPROVED") {
       await this.checkUnresolvedComments(prdId);
     }
 
-    // 7. Update the status
+    // 8. Update the status
     await prisma.prd.update({
       where: { id: prdId },
       data: { status: toStatus },
     });
 
-    // 8. TASK-028: Notify reviewers when entering IN_REVIEW
+    // 9. TASK-028: Notify reviewers when entering IN_REVIEW
     if (toStatus === "IN_REVIEW") {
       await this.notifyReviewers(prd.projectId, prdId, prd.title);
     }
 
-    // 9. TASK-034: Log audit entry
+    // 10. TASK-034: Log audit entry
     await this.auditService.logTransition(
       prdId,
       userId,
@@ -143,61 +155,63 @@ export class StatusWorkflowService {
 
   /**
    * Verify the user has permission to perform the requested transition.
+   *
+   * Authorization matrix:
+   *   DRAFT → IN_REVIEW:   PRD author, co-author, project SUBMITTER/ADMIN, system ADMIN
+   *   IN_REVIEW → APPROVED: project APPROVER/ADMIN, system ADMIN
+   *   IN_REVIEW → DRAFT:   project APPROVER/ADMIN, system ADMIN (rejection)
+   *   APPROVED → SUBMITTED: PRD author, co-author, project ADMIN, system ADMIN
+   *   APPROVED → DRAFT:    PRD author, co-author, project ADMIN, system ADMIN
+   *   SUBMITTED → DRAFT:   PRD author, co-author, project ADMIN, system ADMIN
    */
   private async checkAuthorization(
     prd: { id: string; authorId: string; projectId: string },
     userId: string,
-    userRole: string | undefined,
-    isAdmin: boolean,
+    isSystemAdmin: boolean,
+    projectRole: string | null,
     fromStatus: PrdStatus,
     toStatus: PrdStatus,
   ): Promise<void> {
-    // Admins can always perform valid transitions
-    if (isAdmin) return;
+    // System admins can always perform valid transitions
+    if (isSystemAdmin) return;
 
-    // DRAFT -> IN_REVIEW: only author or co-author
+    // DRAFT -> IN_REVIEW: author, co-author, project SUBMITTER or project ADMIN
     if (fromStatus === "DRAFT" && toStatus === "IN_REVIEW") {
+      if (projectRole === "SUBMITTER" || projectRole === "ADMIN") return;
       const isAuthor = prd.authorId === userId;
-      if (!isAuthor) {
-        const coAuthor = await prisma.prdCoAuthor.findFirst({
-          where: { prdId: prd.id, userId },
-        });
-        if (!coAuthor) {
-          throw new ForbiddenError(
-            "Only the author or co-authors can submit for review",
-          );
-        }
-      }
-      return;
+      if (isAuthor) return;
+      const coAuthor = await prisma.prdCoAuthor.findFirst({
+        where: { prdId: prd.id, userId },
+      });
+      if (coAuthor) return;
+      throw new ForbiddenError(
+        "Only the author, co-authors, or project submitters can submit for review",
+      );
     }
 
-    // IN_REVIEW -> APPROVED: only reviewer or admin
+    // IN_REVIEW -> APPROVED: project APPROVER or project ADMIN
     if (fromStatus === "IN_REVIEW" && toStatus === "APPROVED") {
-      if (userRole !== "REVIEWER") {
-        throw new ForbiddenError("Only reviewers or admins can approve");
-      }
-      return;
+      if (projectRole === "APPROVER" || projectRole === "ADMIN") return;
+      throw new ForbiddenError("Only project approvers or admins can approve");
     }
 
-    // IN_REVIEW -> DRAFT (rejection): only reviewer or admin
+    // IN_REVIEW -> DRAFT (rejection): project APPROVER or project ADMIN
     if (fromStatus === "IN_REVIEW" && toStatus === "DRAFT") {
-      if (userRole !== "REVIEWER") {
-        throw new ForbiddenError("Only reviewers or admins can reject");
-      }
-      return;
+      if (projectRole === "APPROVER" || projectRole === "ADMIN") return;
+      throw new ForbiddenError("Only project approvers or admins can reject");
     }
 
-    // APPROVED -> SUBMITTED or APPROVED -> DRAFT or SUBMITTED -> DRAFT: author/co-author/admin
+    // APPROVED -> SUBMITTED or APPROVED -> DRAFT or SUBMITTED -> DRAFT:
+    // author, co-author, or project ADMIN
     if (fromStatus === "APPROVED" || fromStatus === "SUBMITTED") {
+      if (projectRole === "ADMIN") return;
       const isAuthor = prd.authorId === userId;
-      if (!isAuthor) {
-        const coAuthor = await prisma.prdCoAuthor.findFirst({
-          where: { prdId: prd.id, userId },
-        });
-        if (!coAuthor) {
-          throw new ForbiddenError("Insufficient permissions for this transition");
-        }
-      }
+      if (isAuthor) return;
+      const coAuthor = await prisma.prdCoAuthor.findFirst({
+        where: { prdId: prd.id, userId },
+      });
+      if (coAuthor) return;
+      throw new ForbiddenError("Insufficient permissions for this transition");
     }
   }
 
@@ -235,7 +249,7 @@ export class StatusWorkflowService {
     const reviewers = await prisma.projectMember.findMany({
       where: {
         projectId,
-        isReviewer: true,
+        role: { in: ["REVIEWER", "APPROVER", "ADMIN"] },
       },
     });
 
