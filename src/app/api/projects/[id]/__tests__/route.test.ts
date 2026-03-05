@@ -62,7 +62,7 @@ const MOCK_PROJECT = {
   defaultLabels: [],
   defaultReviewers: [],
   members: [
-    { userId: "user_1", isReviewer: false, user: { id: "user_1", name: "Test User" } },
+    { userId: "user_1", role: "MEMBER", user: { id: "user_1", name: "Test User" } },
   ],
   createdAt: new Date(),
   updatedAt: new Date(),

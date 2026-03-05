@@ -197,6 +197,7 @@ describe("POST /api/projects", () => {
         members: {
           create: {
             userId: "user_1",
+            role: "ADMIN",
           },
         },
       },

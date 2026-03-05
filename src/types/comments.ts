@@ -3,6 +3,7 @@ export interface CommentData {
   authorId: string;
   authorName: string;
   body: string;
+  parentId?: string | null;
   resolved: boolean;
   resolvedBy?: string;
   createdAt: string;

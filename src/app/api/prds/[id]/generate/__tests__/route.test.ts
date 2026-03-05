@@ -53,6 +53,11 @@ jest.mock("@/services/agent/agent-session-manager", () => ({
   })),
 }));
 
+const mockEnsureRepoClone = jest.fn();
+jest.mock("@/app/api/internal/repo/_lib/ensure-clone", () => ({
+  ensureRepoClone: (...args: unknown[]) => mockEnsureRepoClone(...args),
+}));
+
 // ---------------------------------------------------------------------------
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
@@ -106,7 +111,8 @@ describe("POST /api/prds/[id]/generate", () => {
     // Default: PRD exists and belongs to a project the user is a member of
     mockPrdFindUnique.mockResolvedValue({
       id: "prd_001",
-      title: "A short description for the PRD",
+      title: "My PRD Title",
+      description: "A short description for the PRD",
       projectId: "proj_001",
       authorId: "user_1",
       status: "DRAFT",
@@ -134,6 +140,7 @@ describe("POST /api/prds/[id]/generate", () => {
     // prompt resolves immediately; tests fire agent events manually via capturedListener
     mockPrompt.mockResolvedValue(undefined);
     mockDisposeAll.mockResolvedValue(undefined);
+    mockEnsureRepoClone.mockResolvedValue({ cloneDir: "/repos/user/proj" });
 
     // PrdVersion.findFirst returns null by default (no previous versions)
     mockPrdVersionFindFirst.mockResolvedValue(null);
@@ -376,7 +383,7 @@ describe("POST /api/prds/[id]/generate", () => {
         mode: "create",
         projectId: "proj_001",
         prdId: "prd_001",
-        description: "A short description for the PRD",
+        description: "A short description for the PRD", // prd.description
       }),
     );
   });
@@ -458,7 +465,8 @@ describe("POST /api/prds/[id]/generate", () => {
   it("returns 409 when PRD is already being generated", async () => {
     mockPrdFindUnique.mockResolvedValue({
       id: "prd_001",
-      title: "A short description for the PRD",
+      title: "My PRD Title",
+      description: "A short description for the PRD",
       projectId: "proj_001",
       authorId: "user_1",
       status: "DRAFT",
@@ -478,7 +486,8 @@ describe("POST /api/prds/[id]/generate", () => {
   it("returns 409 when PRD generation has already completed", async () => {
     mockPrdFindUnique.mockResolvedValue({
       id: "prd_001",
-      title: "A short description for the PRD",
+      title: "My PRD Title",
+      description: "A short description for the PRD",
       projectId: "proj_001",
       authorId: "user_1",
       status: "DRAFT",

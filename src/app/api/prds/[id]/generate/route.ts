@@ -18,6 +18,7 @@ import type { AgentSessionEvent } from "@/types/pi-sdk";
 import { handleApiError, NotFoundError, ForbiddenError } from "@/lib/api/errors";
 import logger from "@/lib/logger";
 import { buildCreatePrompt } from "@/lib/prd/build-create-prompt";
+import { ensureRepoClone } from "@/app/api/internal/repo/_lib/ensure-clone";
 
 // ---------------------------------------------------------------------------
 // POST /api/prds/[id]/generate
@@ -51,6 +52,12 @@ export async function POST(
       throw new ForbiddenError("User is not a member of this project");
     }
 
+    // Ensure repo is cloned before building the prompt (non-fatal: generation continues without it)
+    const repoResult = await ensureRepoClone(userId, prd.projectId);
+    if (repoResult instanceof Response) {
+      logger.warn({ userId, projectId: prd.projectId, prdId }, "PRD generate: repo clone unavailable, proceeding without repo context");
+    }
+
     // Fix 3: Idempotency guard — return 409 if already generating or completed
     if (prd.generationStatus === "generating" || prd.generationStatus === "completed") {
       return new Response(
@@ -74,11 +81,14 @@ export async function POST(
       mode: "create",
       projectId: prd.projectId,
       prdId: prd.id,
-      description: prd.title, // the description was saved as title initially
+      description: prd.description ?? prd.title,
     });
 
-    // Fix 5: Use shared prompt helper instead of inline duplicate
-    const prompt = buildCreatePrompt(prd.title);
+    // Use shared prompt helper — prefer the stored description; fall back to title
+    const prompt = buildCreatePrompt(prd.description ?? prd.title, {
+      userId,
+      projectId: prd.projectId,
+    });
 
     logger.info(
       { sessionId, prdId, userId },

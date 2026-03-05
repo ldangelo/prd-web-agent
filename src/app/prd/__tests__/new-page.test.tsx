@@ -6,6 +6,12 @@
 import { render, screen, act } from "@testing-library/react";
 import NewPrdPage from "../new/page";
 
+// Mock react-markdown (ESM module not compatible with Jest transform)
+jest.mock("react-markdown", () => ({
+  __esModule: true,
+  default: ({ children }: { children: string }) => children,
+}));
+
 // Mock next/navigation
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -54,7 +60,7 @@ describe("New PRD page", () => {
       render(<NewPrdPage />);
     });
 
-    const textarea = screen.getByLabelText(/description/i);
+    const textarea = screen.getByPlaceholderText(/describe what this prd should cover/i);
     expect(textarea).toBeInTheDocument();
     expect(textarea.tagName.toLowerCase()).toBe("textarea");
   });

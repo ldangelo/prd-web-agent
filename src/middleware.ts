@@ -15,7 +15,8 @@ export default auth((req) => {
   const { nextUrl } = req;
 
   // Allow public paths through without authentication
-  const publicPaths = ["/login", "/api/auth", "/api/health"];
+  // /api/internal is protected by its own token-based auth (OPENCLAW_INTERNAL_TOKEN)
+  const publicPaths = ["/login", "/api/auth", "/api/health", "/api/internal"];
   const isPublic = publicPaths.some((path) =>
     nextUrl.pathname.startsWith(path),
   );

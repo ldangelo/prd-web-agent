@@ -44,6 +44,7 @@ export interface UsePrdGenerationResult {
   streamingText: string;
   error: string | null;
   refreshContent: () => Promise<void>;
+  retryGeneration: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,6 +152,89 @@ export function usePrdGeneration(prdId: string): UsePrdGenerationResult {
     };
   }, [prdId, fetchLatestVersion]);
 
+  // Retry generation via SSE streaming endpoint
+  const retryGeneration = useCallback(async () => {
+    setError(null);
+    setIsGenerating(true);
+    setStreamingText("");
+    streamingTextRef.current = "";
+
+    try {
+      const res = await fetch(`/api/prds/${prdId}/generate`, { method: "POST" });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? `Generation failed (HTTP ${res.status})`);
+        setIsGenerating(false);
+        return;
+      }
+
+      if (!res.body) {
+        setError("No response body from generate endpoint");
+        setIsGenerating(false);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let currentEvent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            try {
+              const parsed = JSON.parse(data);
+              if (currentEvent === "text_delta") {
+                streamingTextRef.current += parsed.delta ?? "";
+                setStreamingText(streamingTextRef.current);
+              } else if (currentEvent === "prd_saved") {
+                setStreamingText("");
+                streamingTextRef.current = "";
+                setIsGenerating(false);
+                void fetchLatestVersion();
+              } else if (currentEvent === "error") {
+                setError(parsed.error ?? "Generation error");
+                setIsGenerating(false);
+                reader.cancel().catch(() => {});
+                return;
+              }
+            } catch {
+              // skip malformed JSON
+            }
+          } else if (line === "") {
+            currentEvent = "";
+          }
+        }
+      }
+      setIsGenerating(false);
+    } catch (err: any) {
+      setError(err.message ?? "Network error during generation");
+      setIsGenerating(false);
+    }
+  }, [prdId, fetchLatestVersion]);
+
+  // Warn before unloading while generation is in progress
+  useEffect(() => {
+    if (!isGenerating) return;
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isGenerating]);
+
   // Initial fetch
   useEffect(() => {
     void fetchLatestVersion();
@@ -164,5 +248,6 @@ export function usePrdGeneration(prdId: string): UsePrdGenerationResult {
     streamingText,
     error,
     refreshContent: fetchLatestVersion,
+    retryGeneration,
   };
 }

@@ -11,8 +11,6 @@ import { requireAuth } from "@/lib/auth";
 import { apiSuccess } from "@/lib/api/response";
 import { handleApiError, NotFoundError, ForbiddenError } from "@/lib/api/errors";
 import { validateBody } from "@/lib/api/validate";
-import { triggerPrdGeneration } from "@/services/agent/prd-generator";
-
 // ---------------------------------------------------------------------------
 // Allowed sort fields (whitelist to prevent injection)
 // ---------------------------------------------------------------------------
@@ -27,6 +25,7 @@ const ALLOWED_STATUSES = ["DRAFT", "IN_REVIEW", "APPROVED", "SUBMITTED"];
 
 const createPrdSchema = z.object({
   projectId: z.string().min(1, "projectId is required"),
+  title: z.string().min(1, "title is required"),
   description: z.string().optional(),
 });
 
@@ -150,26 +149,13 @@ export async function POST(request: NextRequest) {
     // Create the PRD in DRAFT status
     const prd = await prisma.prd.create({
       data: {
-        title: data.description
-          ? data.description.slice(0, 100)
-          : "Untitled PRD",
+        title: data.title,
+        description: data.description ?? null,
         projectId: data.projectId,
         authorId: userId,
         status: "DRAFT",
-        // If a description is provided, mark as pending generation
-        ...(data.description ? { generationStatus: "pending" } : {}),
       },
     });
-
-    // Trigger background PRD generation if description is present
-    if (data.description) {
-      triggerPrdGeneration({
-        prdId: prd.id,
-        projectId: data.projectId,
-        userId,
-        description: data.description,
-      });
-    }
 
     return apiSuccess({ prdId: prd.id }, 201);
   } catch (error) {
