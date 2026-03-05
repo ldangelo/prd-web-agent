@@ -78,7 +78,10 @@ export async function POST(
     });
 
     // Use shared prompt helper — prefer the stored description; fall back to title
-    const prompt = buildCreatePrompt(prd.description ?? prd.title);
+    const prompt = buildCreatePrompt(prd.description ?? prd.title, {
+      userId,
+      projectId: prd.projectId,
+    });
 
     logger.info(
       { sessionId, prdId, userId },

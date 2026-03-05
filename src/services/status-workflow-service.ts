@@ -173,7 +173,7 @@ export class StatusWorkflowService {
 
     // IN_REVIEW -> APPROVED: only reviewer or admin
     if (fromStatus === "IN_REVIEW" && toStatus === "APPROVED") {
-      if (userRole !== "REVIEWER") {
+      if (userRole !== "REVIEWER" && !isAdmin) {
         throw new ForbiddenError("Only reviewers or admins can approve");
       }
       return;
@@ -181,7 +181,7 @@ export class StatusWorkflowService {
 
     // IN_REVIEW -> DRAFT (rejection): only reviewer or admin
     if (fromStatus === "IN_REVIEW" && toStatus === "DRAFT") {
-      if (userRole !== "REVIEWER") {
+      if (userRole !== "REVIEWER" && !isAdmin) {
         throw new ForbiddenError("Only reviewers or admins can reject");
       }
       return;

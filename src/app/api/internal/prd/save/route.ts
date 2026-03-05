@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       await prisma.$transaction(async (tx) => {
         await tx.prd.update({
           where: { id: prdId },
-          data: { currentVersion: nextVersion },
+          data: { currentVersion: nextVersion, title },
         });
         await tx.prdVersion.create({
           data: {

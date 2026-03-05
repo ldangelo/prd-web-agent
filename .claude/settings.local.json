@@ -15,7 +15,8 @@
       "Bash(gh api:*)",
       "Bash(jj:*)",
       "Bash(bd create:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(cmux browser:*)"
     ]
   },
   "enabledPlugins": {

@@ -12,7 +12,22 @@ import { handleApiError, NotFoundError, ForbiddenError } from "@/lib/api/errors"
 import { validateBody } from "@/lib/api/validate";
 import { canAccessPrd } from "@/services/prd-access-service";
 import { listComments, createComment } from "@/services/comment-service";
+import type { ThreadedComment } from "@/services/comment-service";
+import type { CommentData } from "@/types/comments";
 import { prisma } from "@/lib/prisma";
+
+function toCommentData(c: ThreadedComment): CommentData {
+  return {
+    id: c.id,
+    authorId: c.authorId,
+    authorName: c.author.name ?? c.author.email,
+    body: c.body,
+    resolved: c.resolved,
+    resolvedBy: c.resolvedBy ?? undefined,
+    createdAt: c.createdAt.toISOString(),
+    replies: c.replies.map(toCommentData),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -48,7 +63,7 @@ export async function GET(
     }
 
     const comments = await listComments(id);
-    return apiSuccess(comments);
+    return apiSuccess(comments.map(toCommentData));
   } catch (error) {
     return handleApiError(error);
   }
@@ -87,7 +102,18 @@ export async function POST(
       data.parentId,
     );
 
-    return apiSuccess(comment, 201);
+    const result: CommentData = {
+      id: comment.id,
+      authorId: comment.authorId,
+      authorName: comment.author.name ?? comment.author.email,
+      body: comment.body,
+      resolved: comment.resolved,
+      resolvedBy: comment.resolvedBy ?? undefined,
+      createdAt: comment.createdAt.toISOString(),
+      replies: [],
+    };
+
+    return apiSuccess(result, 201);
   } catch (error) {
     return handleApiError(error);
   }

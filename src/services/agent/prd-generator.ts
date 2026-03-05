@@ -104,7 +104,10 @@ async function runGeneration(opts: TriggerPrdGenerationOptions): Promise<void> {
     // -----------------------------------------------------------------------
     // 3. Send the description as the initial prompt
     // -----------------------------------------------------------------------
-    const prompt = buildCreatePrompt(opts.description);
+    const prompt = buildCreatePrompt(opts.description, {
+      userId: opts.userId,
+      projectId: opts.projectId,
+    });
 
     // Collect the full response text
     let generatedContent = "";
