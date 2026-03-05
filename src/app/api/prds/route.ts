@@ -27,6 +27,7 @@ const ALLOWED_STATUSES = ["DRAFT", "IN_REVIEW", "APPROVED", "SUBMITTED"];
 
 const createPrdSchema = z.object({
   projectId: z.string().min(1, "projectId is required"),
+  title: z.string().min(1, "title is required"),
   description: z.string().optional(),
 });
 
@@ -150,9 +151,8 @@ export async function POST(request: NextRequest) {
     // Create the PRD in DRAFT status
     const prd = await prisma.prd.create({
       data: {
-        title: data.description
-          ? data.description.slice(0, 100)
-          : "Untitled PRD",
+        title: data.title,
+        description: data.description ?? null,
         projectId: data.projectId,
         authorId: userId,
         status: "DRAFT",

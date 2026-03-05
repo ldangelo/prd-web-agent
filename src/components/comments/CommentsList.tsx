@@ -18,8 +18,8 @@ export function CommentsList({ prdId }: CommentsListProps) {
     try {
       const res = await fetch(`/api/prds/${prdId}/comments`);
       if (res.ok) {
-        const data = await res.json();
-        setComments(data);
+        const json = await res.json();
+        setComments(json.data);
       }
     } finally {
       setLoading(false);

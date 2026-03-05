@@ -341,7 +341,7 @@ describe("E2E: Full PRD Lifecycle", () => {
     const prdReq = makeRequest(
       "http://localhost/api/prds",
       "POST",
-      { projectId: "proj_001", description: "E2E Test PRD" },
+      { projectId: "proj_001", title: "E2E Test PRD", description: "E2E Test PRD description" },
     );
     const prdRes = await createPrd(prdReq as any);
     const prdBody = await prdRes.json();
@@ -614,7 +614,7 @@ describe("E2E: Auth Flow", () => {
     const req = makeRequest(
       "http://localhost/api/prds",
       "POST",
-      { projectId: "proj_001" },
+      { projectId: "proj_001", title: "My PRD" },
     );
     const res = await createPrd(req as any);
     const body = await res.json();
