@@ -38,11 +38,16 @@ services:
     environment:
       - ANTHROPIC_API_KEY=${PI_SDK_API_KEY}
       - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - APP_URL=${APP_URL:-http://host.docker.internal:3000}
+      - OPENCLAW_INTERNAL_TOKEN=${OPENCLAW_INTERNAL_TOKEN}
     volumes:
-      - ./openclaw/skills:/home/node/.openclaw/workspace/skills
+      - ./openclaw/skills:/home/node/.openclaw/workspace/skills-src:ro
       - ./openclaw/config/openclaw.json:/home/node/.openclaw/openclaw.json
+      - ./openclaw/entrypoint.sh:/entrypoint.sh
+      - ./.local-efs/repos:/repos:ro
     ports:
       - "18790:18789"
+    entrypoint: ["node", "/entrypoint.sh"]
     command: ["gateway", "--port", "18789"]
 
 volumes:

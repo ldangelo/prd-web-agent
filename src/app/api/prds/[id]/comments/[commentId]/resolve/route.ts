@@ -10,10 +10,10 @@ import { handleApiError } from "@/lib/api/errors";
 import { resolveComment } from "@/services/comment-service";
 
 // ---------------------------------------------------------------------------
-// PUT /api/prds/[id]/comments/[commentId]/resolve
+// PATCH /api/prds/[id]/comments/[commentId]/resolve
 // ---------------------------------------------------------------------------
 
-export async function PUT(
+export async function PATCH(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; commentId: string }> },
 ) {

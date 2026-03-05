@@ -128,7 +128,7 @@ export default function SettingsPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <h1 className="mb-6 text-2xl font-bold">LLM Settings</h1>
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -136,12 +136,12 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="mb-2 text-2xl font-bold">LLM Settings</h1>
-      <p className="mb-6 text-sm text-gray-500">
+      <p className="mb-6 text-sm text-muted-foreground">
         Configure your own LLM provider and API key. If not set, the global
         defaults will be used.
       </p>
 
-      <div className="space-y-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="space-y-6 rounded-lg border border-border bg-card p-6 shadow-sm">
         {/* Provider */}
         <div className="space-y-2">
           <Label htmlFor="provider">Provider</Label>
@@ -166,7 +166,7 @@ export default function SettingsPage() {
             onChange={(e) => setModel(e.target.value)}
             placeholder={PROVIDER_DEFAULTS[provider]}
           />
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Leave blank to use the default for the selected provider
           </p>
         </div>

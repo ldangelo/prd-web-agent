@@ -74,11 +74,14 @@ export async function POST(
       mode: "create",
       projectId: prd.projectId,
       prdId: prd.id,
-      description: prd.title, // the description was saved as title initially
+      description: prd.description ?? prd.title,
     });
 
-    // Fix 5: Use shared prompt helper instead of inline duplicate
-    const prompt = buildCreatePrompt(prd.title);
+    // Use shared prompt helper — prefer the stored description; fall back to title
+    const prompt = buildCreatePrompt(prd.description ?? prd.title, {
+      userId,
+      projectId: prd.projectId,
+    });
 
     logger.info(
       { sessionId, prdId, userId },

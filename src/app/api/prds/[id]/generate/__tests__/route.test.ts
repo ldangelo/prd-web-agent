@@ -106,7 +106,8 @@ describe("POST /api/prds/[id]/generate", () => {
     // Default: PRD exists and belongs to a project the user is a member of
     mockPrdFindUnique.mockResolvedValue({
       id: "prd_001",
-      title: "A short description for the PRD",
+      title: "My PRD Title",
+      description: "A short description for the PRD",
       projectId: "proj_001",
       authorId: "user_1",
       status: "DRAFT",
@@ -376,7 +377,7 @@ describe("POST /api/prds/[id]/generate", () => {
         mode: "create",
         projectId: "proj_001",
         prdId: "prd_001",
-        description: "A short description for the PRD",
+        description: "A short description for the PRD", // prd.description
       }),
     );
   });
@@ -458,7 +459,8 @@ describe("POST /api/prds/[id]/generate", () => {
   it("returns 409 when PRD is already being generated", async () => {
     mockPrdFindUnique.mockResolvedValue({
       id: "prd_001",
-      title: "A short description for the PRD",
+      title: "My PRD Title",
+      description: "A short description for the PRD",
       projectId: "proj_001",
       authorId: "user_1",
       status: "DRAFT",
@@ -478,7 +480,8 @@ describe("POST /api/prds/[id]/generate", () => {
   it("returns 409 when PRD generation has already completed", async () => {
     mockPrdFindUnique.mockResolvedValue({
       id: "prd_001",
-      title: "A short description for the PRD",
+      title: "My PRD Title",
+      description: "A short description for the PRD",
       projectId: "proj_001",
       authorId: "user_1",
       status: "DRAFT",

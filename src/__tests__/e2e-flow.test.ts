@@ -164,7 +164,7 @@ import {
   POST as postComment,
   GET as getComments,
 } from "@/app/api/prds/[id]/comments/route";
-import { PUT as resolveCommentRoute } from "@/app/api/prds/[id]/comments/[commentId]/resolve/route";
+import { PATCH as resolveCommentRoute } from "@/app/api/prds/[id]/comments/[commentId]/resolve/route";
 import { POST as submitPrd } from "@/app/api/prds/[id]/submit/route";
 import { GET as getVersions } from "@/app/api/prds/[id]/versions/route";
 import { GET as searchRoute } from "@/app/api/search/route";
@@ -341,7 +341,7 @@ describe("E2E: Full PRD Lifecycle", () => {
     const prdReq = makeRequest(
       "http://localhost/api/prds",
       "POST",
-      { projectId: "proj_001", description: "E2E Test PRD" },
+      { projectId: "proj_001", title: "E2E Test PRD", description: "E2E Test PRD description" },
     );
     const prdRes = await createPrd(prdReq as any);
     const prdBody = await prdRes.json();
@@ -433,7 +433,7 @@ describe("E2E: Full PRD Lifecycle", () => {
 
     const resolveReq = makeRequest(
       "http://localhost/api/prds/prd_001/comments/comment_001/resolve",
-      "PUT",
+      "PATCH",
     );
     const resolveRes = await resolveCommentRoute(
       resolveReq as any,
@@ -614,7 +614,7 @@ describe("E2E: Auth Flow", () => {
     const req = makeRequest(
       "http://localhost/api/prds",
       "POST",
-      { projectId: "proj_001" },
+      { projectId: "proj_001", title: "My PRD" },
     );
     const res = await createPrd(req as any);
     const body = await res.json();
@@ -728,7 +728,7 @@ describe("E2E: Comment Threads", () => {
 
     const resolveReq = makeRequest(
       "http://localhost/api/prds/prd_001/comments/comment_001/resolve",
-      "PUT",
+      "PATCH",
     );
     const resolveRes = await resolveCommentRoute(
       resolveReq as any,

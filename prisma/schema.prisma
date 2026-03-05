@@ -13,6 +13,14 @@ enum Role {
   ADMIN
 }
 
+enum ProjectRole {
+  MEMBER
+  REVIEWER
+  SUBMITTER
+  APPROVER
+  ADMIN
+}
+
 enum ThemePreference {
   LIGHT
   DARK
@@ -105,7 +113,7 @@ model ProjectMember {
   id        String   @id @default(cuid())
   projectId String
   userId    String
-  isReviewer Boolean @default(false)
+  role      ProjectRole @default(MEMBER)
 
   project   Project  @relation(fields: [projectId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
@@ -116,6 +124,7 @@ model ProjectMember {
 model Prd {
   id              String      @id @default(cuid())
   title           String
+  description     String?
   projectId       String
   authorId        String
   status          PrdStatus   @default(DRAFT)

@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
 
 interface Project {
   id: string;
@@ -23,12 +24,14 @@ export default function NewPrdPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectId, setProjectId] = useState("");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingText, setStreamingText] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const [descTab, setDescTab] = useState<"write" | "preview">("write");
   const streamingPreviewRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -66,6 +69,10 @@ export default function NewPrdPage() {
       setError("Please select a project");
       return;
     }
+    if (!title.trim()) {
+      setError("Please enter a title");
+      return;
+    }
 
     setStreamingText("");
     setIsSubmitting(true);
@@ -78,7 +85,7 @@ export default function NewPrdPage() {
       const res = await fetch("/api/prds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, description }),
+        body: JSON.stringify({ projectId, title: title.trim(), description }),
       });
 
       if (!res.ok) {
@@ -179,78 +186,131 @@ export default function NewPrdPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-2xl font-bold">New PRD</h1>
-      <p className="mt-2 text-muted-foreground">
-        Create a new PRD with AI-assisted authoring.
-      </p>
+    <main className="flex h-[calc(100vh-3.5rem)] flex-col p-6 gap-4">
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-4 shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold">New PRD</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create a new PRD with AI-assisted authoring.
+          </p>
+        </div>
+        {!isGenerating && (
+          <button
+            onClick={handleStart}
+            disabled={isSubmitting}
+            className="rounded bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50 whitespace-nowrap"
+          >
+            {isSubmitting ? "Creating..." : "Start"}
+          </button>
+        )}
+      </div>
 
       {error && (
-        <p className="mt-4 text-sm text-red-600" role="alert">
+        <p className="text-sm text-red-600 shrink-0" role="alert">
           {error}
         </p>
       )}
 
       {isGenerating ? (
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold">Generating your PRD...</h2>
-          <p className="text-sm text-muted-foreground">
-            This may take a moment.
-          </p>
+        <div className="flex flex-col flex-1 min-h-0">
+          <h2 className="text-lg font-semibold shrink-0">Generating your PRD...</h2>
+          <p className="text-sm text-muted-foreground shrink-0">This may take a moment.</p>
           {streamingText && (
             <div
               ref={streamingPreviewRef}
-              className="mt-4 rounded border border-border bg-muted p-4 text-sm font-mono whitespace-pre-wrap max-h-96 overflow-y-auto"
+              className="mt-4 flex-1 min-h-0 overflow-y-auto rounded border border-border bg-muted p-4 text-sm font-mono whitespace-pre-wrap"
             >
               {streamingText}
             </div>
           )}
         </div>
       ) : (
-        <div className="mt-6 space-y-4">
-          <div>
-            <label
-              htmlFor="project-select"
-              className="block text-sm font-medium"
-            >
-              Project
-            </label>
-            <select
-              id="project-select"
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="mt-1 block w-full rounded border border-input bg-background p-2 text-foreground"
-            >
-              <option value="">Select a project...</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+        <div className="flex flex-col flex-1 min-h-0 gap-3">
+          {/* Project + Title column */}
+          <div className="flex flex-col gap-3 shrink-0">
+            <div>
+              <label htmlFor="project-select" className="block text-sm font-medium mb-1">
+                Project
+              </label>
+              <select
+                id="project-select"
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                className="block w-full rounded border border-input bg-background p-2 text-foreground text-sm"
+              >
+                <option value="">Select a project...</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="prd-title" className="block text-sm font-medium mb-1">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="prd-title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Short name for this PRD"
+                className="block w-full rounded border border-input bg-background p-2 text-foreground placeholder:text-muted-foreground text-sm"
+              />
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium">
-              Description
-            </label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              placeholder="Briefly describe what this PRD should cover..."
-              className="mt-1 block w-full rounded border border-input bg-background p-2 text-foreground placeholder:text-muted-foreground"
-            />
-          </div>
+          {/* Markdown editor — fills remaining height */}
+          <div className="flex flex-col flex-1 min-h-0">
+            {/* Tab bar */}
+            <div className="flex items-center gap-1 border-b border-border shrink-0 mb-0">
+              <button
+                type="button"
+                onClick={() => setDescTab("write")}
+                className={`px-3 py-1.5 text-sm font-medium border-b-2 transition-colors ${
+                  descTab === "write"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Write
+              </button>
+              <button
+                type="button"
+                onClick={() => setDescTab("preview")}
+                className={`px-3 py-1.5 text-sm font-medium border-b-2 transition-colors ${
+                  descTab === "preview"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Preview
+              </button>
+              <span className="ml-auto text-xs text-muted-foreground pr-1">Markdown supported</span>
+            </div>
 
-          <button
-            onClick={handleStart}
-            disabled={isSubmitting}
-            className="rounded bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            {isSubmitting ? "Creating..." : "Start"}
-          </button>
+            {descTab === "write" ? (
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe what this PRD should cover. Supports **markdown** formatting."
+                className="flex-1 min-h-0 w-full resize-none rounded-b border border-t-0 border-input bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            ) : (
+              <div className="flex-1 min-h-0 overflow-y-auto rounded-b border border-t-0 border-border bg-background p-4">
+                {description ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown>{description}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Nothing to preview yet.</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </main>

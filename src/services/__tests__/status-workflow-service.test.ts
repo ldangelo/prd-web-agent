@@ -14,6 +14,7 @@ const mockPrdFindUnique = jest.fn();
 const mockPrdUpdate = jest.fn();
 const mockUserFindUnique = jest.fn();
 const mockPrdCoAuthorFindFirst = jest.fn();
+const mockProjectMemberFindUnique = jest.fn();
 const mockProjectMemberFindMany = jest.fn();
 const mockNotificationCreateMany = jest.fn();
 const mockCommentCount = jest.fn();
@@ -32,6 +33,7 @@ jest.mock("@/lib/prisma", () => ({
       findFirst: (...args: unknown[]) => mockPrdCoAuthorFindFirst(...args),
     },
     projectMember: {
+      findUnique: (...args: unknown[]) => mockProjectMemberFindUnique(...args),
       findMany: (...args: unknown[]) => mockProjectMemberFindMany(...args),
     },
     notification: {
@@ -82,6 +84,11 @@ const MOCK_PRD_APPROVED = {
   status: "APPROVED" as PrdStatus,
 };
 
+// Helper: membership with a given role
+function membership(role: string) {
+  return { id: "pm_1", projectId: "proj_001", userId: "user_1", role };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -93,13 +100,16 @@ describe("StatusWorkflowService", () => {
     jest.clearAllMocks();
     service = new StatusWorkflowService();
 
-    // Default: user exists as author
+    // Default: user exists as author (non-admin system role)
     mockUserFindUnique.mockResolvedValue({
       id: "user_author",
       name: "Author",
       email: "author@example.com",
       role: "AUTHOR",
     });
+
+    // Default: author has SUBMITTER project role
+    mockProjectMemberFindUnique.mockResolvedValue(membership("SUBMITTER"));
 
     // Default: no co-author relationship
     mockPrdCoAuthorFindFirst.mockResolvedValue(null);
@@ -202,9 +212,11 @@ describe("StatusWorkflowService", () => {
   // -----------------------------------------------------------------------
 
   describe("transition", () => {
-    it("should transition DRAFT -> IN_REVIEW for the author", async () => {
+    it("should transition DRAFT -> IN_REVIEW for the author (who is the PRD author)", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_DRAFT);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_DRAFT, status: "IN_REVIEW" });
+      // author is the PRD author — no project membership needed
+      mockProjectMemberFindUnique.mockResolvedValue(null);
 
       await service.transition("prd_001", "user_author", "IN_REVIEW");
 
@@ -222,6 +234,22 @@ describe("StatusWorkflowService", () => {
       );
     });
 
+    it("should transition DRAFT -> IN_REVIEW for a project SUBMITTER", async () => {
+      mockPrdFindUnique.mockResolvedValue(MOCK_PRD_DRAFT);
+      mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_DRAFT, status: "IN_REVIEW" });
+      mockUserFindUnique.mockResolvedValue({
+        id: "user_submitter",
+        name: "Submitter",
+        email: "submitter@example.com",
+        role: "AUTHOR",
+      });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("SUBMITTER"));
+
+      await service.transition("prd_001", "user_submitter", "IN_REVIEW");
+
+      expect(mockPrdUpdate).toHaveBeenCalled();
+    });
+
     it("should transition DRAFT -> IN_REVIEW for a co-author", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_DRAFT);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_DRAFT, status: "IN_REVIEW" });
@@ -231,6 +259,8 @@ describe("StatusWorkflowService", () => {
         email: "coauthor@example.com",
         role: "AUTHOR",
       });
+      // Not submitter/admin project role
+      mockProjectMemberFindUnique.mockResolvedValue(membership("MEMBER"));
       mockPrdCoAuthorFindFirst.mockResolvedValue({
         id: "ca_1",
         prdId: "prd_001",
@@ -261,30 +291,32 @@ describe("StatusWorkflowService", () => {
     it("should require comment when rejecting (IN_REVIEW -> DRAFT)", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_IN_REVIEW);
       mockUserFindUnique.mockResolvedValue({
-        id: "user_reviewer",
-        name: "Reviewer",
-        email: "reviewer@example.com",
-        role: "REVIEWER",
+        id: "user_approver",
+        name: "Approver",
+        email: "approver@example.com",
+        role: "AUTHOR",
       });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("APPROVER"));
 
       await expect(
-        service.transition("prd_001", "user_reviewer", "DRAFT"),
+        service.transition("prd_001", "user_approver", "DRAFT"),
       ).rejects.toThrow("Comment is required when rejecting");
     });
 
-    it("should allow rejection with comment", async () => {
+    it("should allow rejection with comment by project APPROVER", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_IN_REVIEW);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_IN_REVIEW, status: "DRAFT" });
       mockUserFindUnique.mockResolvedValue({
-        id: "user_reviewer",
-        name: "Reviewer",
-        email: "reviewer@example.com",
-        role: "REVIEWER",
+        id: "user_approver",
+        name: "Approver",
+        email: "approver@example.com",
+        role: "AUTHOR",
       });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("APPROVER"));
 
       await service.transition(
         "prd_001",
-        "user_reviewer",
+        "user_approver",
         "DRAFT",
         "Needs revision on section 3",
       );
@@ -295,7 +327,7 @@ describe("StatusWorkflowService", () => {
       });
       expect(mockLogTransition).toHaveBeenCalledWith(
         "prd_001",
-        "user_reviewer",
+        "user_approver",
         "STATUS_CHANGE",
         "IN_REVIEW",
         "DRAFT",
@@ -307,7 +339,7 @@ describe("StatusWorkflowService", () => {
     // Authorization checks
     // -------------------------------------------------------------------
 
-    it("should reject non-author/non-co-author submitting for review", async () => {
+    it("should reject member with MEMBER role submitting for review", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_DRAFT);
       mockUserFindUnique.mockResolvedValue({
         id: "user_random",
@@ -315,14 +347,15 @@ describe("StatusWorkflowService", () => {
         email: "random@example.com",
         role: "AUTHOR",
       });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("MEMBER"));
       mockPrdCoAuthorFindFirst.mockResolvedValue(null);
 
       await expect(
         service.transition("prd_001", "user_random", "IN_REVIEW"),
-      ).rejects.toThrow("Only the author or co-authors can submit for review");
+      ).rejects.toThrow("Only the author, co-authors, or project submitters can submit for review");
     });
 
-    it("should allow admin to perform any valid transition", async () => {
+    it("should allow system ADMIN to perform any valid transition", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_DRAFT);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_DRAFT, status: "IN_REVIEW" });
       mockUserFindUnique.mockResolvedValue({
@@ -331,13 +364,15 @@ describe("StatusWorkflowService", () => {
         email: "admin@example.com",
         role: "ADMIN",
       });
+      // System admin: projectMember.findUnique is not called
+      mockProjectMemberFindUnique.mockResolvedValue(null);
 
       await service.transition("prd_001", "user_admin", "IN_REVIEW");
 
       expect(mockPrdUpdate).toHaveBeenCalled();
     });
 
-    it("should reject non-reviewer/non-admin approving", async () => {
+    it("should reject non-approver approving (only MEMBER project role)", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_IN_REVIEW);
       mockUserFindUnique.mockResolvedValue({
         id: "user_author",
@@ -345,24 +380,43 @@ describe("StatusWorkflowService", () => {
         email: "author@example.com",
         role: "AUTHOR",
       });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("MEMBER"));
 
       await expect(
         service.transition("prd_001", "user_author", "APPROVED"),
-      ).rejects.toThrow("Only reviewers or admins can approve");
+      ).rejects.toThrow("Only project approvers or admins can approve");
     });
 
-    it("should allow reviewer to approve", async () => {
+    it("should allow project APPROVER to approve", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_IN_REVIEW);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_IN_REVIEW, status: "APPROVED" });
       mockUserFindUnique.mockResolvedValue({
-        id: "user_reviewer",
-        name: "Reviewer",
-        email: "reviewer@example.com",
-        role: "REVIEWER",
+        id: "user_approver",
+        name: "Approver",
+        email: "approver@example.com",
+        role: "AUTHOR",
       });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("APPROVER"));
       mockCommentCount.mockResolvedValue(0);
 
-      await service.transition("prd_001", "user_reviewer", "APPROVED");
+      await service.transition("prd_001", "user_approver", "APPROVED");
+
+      expect(mockPrdUpdate).toHaveBeenCalled();
+    });
+
+    it("should allow project ADMIN to approve", async () => {
+      mockPrdFindUnique.mockResolvedValue(MOCK_PRD_IN_REVIEW);
+      mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_IN_REVIEW, status: "APPROVED" });
+      mockUserFindUnique.mockResolvedValue({
+        id: "user_proj_admin",
+        name: "Project Admin",
+        email: "padmin@example.com",
+        role: "AUTHOR",
+      });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("ADMIN"));
+      mockCommentCount.mockResolvedValue(0);
+
+      await service.transition("prd_001", "user_proj_admin", "APPROVED");
 
       expect(mockPrdUpdate).toHaveBeenCalled();
     });
@@ -371,12 +425,13 @@ describe("StatusWorkflowService", () => {
     // TASK-028: Reviewer auto-assignment
     // -------------------------------------------------------------------
 
-    it("should notify reviewers when transitioning to IN_REVIEW", async () => {
+    it("should notify REVIEWER/APPROVER/ADMIN members when transitioning to IN_REVIEW", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_DRAFT);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_DRAFT, status: "IN_REVIEW" });
+      mockProjectMemberFindUnique.mockResolvedValue(null); // author is PRD author
       mockProjectMemberFindMany.mockResolvedValue([
-        { userId: "user_rev1", isReviewer: true },
-        { userId: "user_rev2", isReviewer: true },
+        { userId: "user_rev1", role: "REVIEWER" },
+        { userId: "user_rev2", role: "APPROVER" },
       ]);
       mockNotificationCreateMany.mockResolvedValue({ count: 2 });
 
@@ -385,7 +440,7 @@ describe("StatusWorkflowService", () => {
       expect(mockProjectMemberFindMany).toHaveBeenCalledWith({
         where: {
           projectId: "proj_001",
-          isReviewer: true,
+          role: { in: ["REVIEWER", "APPROVER", "ADMIN"] },
         },
       });
       expect(mockNotificationCreateMany).toHaveBeenCalledWith({
@@ -409,6 +464,7 @@ describe("StatusWorkflowService", () => {
     it("should not create notifications when no reviewers exist", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_DRAFT);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_DRAFT, status: "IN_REVIEW" });
+      mockProjectMemberFindUnique.mockResolvedValue(null); // PRD author
       mockProjectMemberFindMany.mockResolvedValue([]);
 
       await service.transition("prd_001", "user_author", "IN_REVIEW");
@@ -423,11 +479,12 @@ describe("StatusWorkflowService", () => {
     it("should block approval when unresolved comments exist and setting is enabled", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_IN_REVIEW);
       mockUserFindUnique.mockResolvedValue({
-        id: "user_reviewer",
-        name: "Reviewer",
-        email: "reviewer@example.com",
-        role: "REVIEWER",
+        id: "user_approver",
+        name: "Approver",
+        email: "approver@example.com",
+        role: "AUTHOR",
       });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("APPROVER"));
       mockGlobalSettingsFindUnique.mockResolvedValue({
         id: "global",
         blockApprovalOnUnresolvedComments: true,
@@ -435,7 +492,7 @@ describe("StatusWorkflowService", () => {
       mockCommentCount.mockResolvedValue(3);
 
       await expect(
-        service.transition("prd_001", "user_reviewer", "APPROVED"),
+        service.transition("prd_001", "user_approver", "APPROVED"),
       ).rejects.toThrow("Cannot approve: 3 unresolved comment(s) remain");
     });
 
@@ -443,18 +500,19 @@ describe("StatusWorkflowService", () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_IN_REVIEW);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_IN_REVIEW, status: "APPROVED" });
       mockUserFindUnique.mockResolvedValue({
-        id: "user_reviewer",
-        name: "Reviewer",
-        email: "reviewer@example.com",
-        role: "REVIEWER",
+        id: "user_approver",
+        name: "Approver",
+        email: "approver@example.com",
+        role: "AUTHOR",
       });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("APPROVER"));
       mockGlobalSettingsFindUnique.mockResolvedValue({
         id: "global",
         blockApprovalOnUnresolvedComments: false,
       });
       mockCommentCount.mockResolvedValue(3);
 
-      await service.transition("prd_001", "user_reviewer", "APPROVED");
+      await service.transition("prd_001", "user_approver", "APPROVED");
 
       expect(mockPrdUpdate).toHaveBeenCalled();
     });
@@ -463,14 +521,15 @@ describe("StatusWorkflowService", () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_IN_REVIEW);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_IN_REVIEW, status: "APPROVED" });
       mockUserFindUnique.mockResolvedValue({
-        id: "user_reviewer",
-        name: "Reviewer",
-        email: "reviewer@example.com",
-        role: "REVIEWER",
+        id: "user_approver",
+        name: "Approver",
+        email: "approver@example.com",
+        role: "AUTHOR",
       });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("APPROVER"));
       mockCommentCount.mockResolvedValue(0);
 
-      await service.transition("prd_001", "user_reviewer", "APPROVED");
+      await service.transition("prd_001", "user_approver", "APPROVED");
 
       expect(mockPrdUpdate).toHaveBeenCalled();
     });
@@ -479,15 +538,16 @@ describe("StatusWorkflowService", () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_IN_REVIEW);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_IN_REVIEW, status: "APPROVED" });
       mockUserFindUnique.mockResolvedValue({
-        id: "user_reviewer",
-        name: "Reviewer",
-        email: "reviewer@example.com",
-        role: "REVIEWER",
+        id: "user_approver",
+        name: "Approver",
+        email: "approver@example.com",
+        role: "AUTHOR",
       });
+      mockProjectMemberFindUnique.mockResolvedValue(membership("APPROVER"));
       mockGlobalSettingsFindUnique.mockResolvedValue(null);
       mockCommentCount.mockResolvedValue(5);
 
-      await service.transition("prd_001", "user_reviewer", "APPROVED");
+      await service.transition("prd_001", "user_approver", "APPROVED");
 
       expect(mockPrdUpdate).toHaveBeenCalled();
     });
@@ -499,6 +559,7 @@ describe("StatusWorkflowService", () => {
     it("should transition APPROVED -> SUBMITTED for the author", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_APPROVED);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_APPROVED, status: "SUBMITTED" });
+      mockProjectMemberFindUnique.mockResolvedValue(null); // PRD author
 
       await service.transition("prd_001", "user_author", "SUBMITTED");
 
@@ -515,6 +576,7 @@ describe("StatusWorkflowService", () => {
     it("should allow re-opening an approved PRD (APPROVED -> DRAFT)", async () => {
       mockPrdFindUnique.mockResolvedValue(MOCK_PRD_APPROVED);
       mockPrdUpdate.mockResolvedValue({ ...MOCK_PRD_APPROVED, status: "DRAFT" });
+      mockProjectMemberFindUnique.mockResolvedValue(null); // PRD author
 
       await service.transition("prd_001", "user_author", "DRAFT");
 
