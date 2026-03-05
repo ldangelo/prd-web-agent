@@ -52,18 +52,26 @@ export class RepoCloneService {
     const cloneDir = this.getCloneDir(userId, projectId);
 
     try {
-      await fs.access(cloneDir);
-      // Directory exists, just sync instead
+      await fs.access(`${cloneDir}/.git`);
+      // Valid git clone exists, just sync instead
       await this.pullRepo(cloneDir);
       return;
     } catch {
-      // Directory doesn't exist, proceed with clone
+      // Not a valid clone — proceed with fresh clone
     }
 
     await fs.mkdir(cloneDir, { recursive: true });
 
+    // Normalize githubRepo to a full HTTPS URL.
+    // Accepts: "owner/repo", "github.com/owner/repo", or full "https://github.com/owner/repo"
+    let repoUrl = githubRepo.trim();
+    if (!repoUrl.startsWith("http://") && !repoUrl.startsWith("https://")) {
+      const slug = repoUrl.replace(/^github\.com\//, "");
+      repoUrl = `https://github.com/${slug}`;
+    }
+
     // Inject token into the URL for HTTPS clones
-    const authedUrl = githubRepo.replace(
+    const authedUrl = repoUrl.replace(
       "https://",
       `https://x-access-token:${oauthToken}@`,
     );

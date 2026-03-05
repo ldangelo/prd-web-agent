@@ -14,6 +14,18 @@ jest.mock("@/lib/auth", () => ({
   requireAuth: () => mockRequireAuth(),
 }));
 
+const mockPrdFindUnique = jest.fn();
+jest.mock("@/lib/prisma", () => ({
+  prisma: {
+    prd: { findUnique: (...args: unknown[]) => mockPrdFindUnique(...args) },
+  },
+}));
+
+const mockEnsureRepoClone = jest.fn();
+jest.mock("@/app/api/internal/repo/_lib/ensure-clone", () => ({
+  ensureRepoClone: (...args: unknown[]) => mockEnsureRepoClone(...args),
+}));
+
 const mockTransition = jest.fn();
 const mockGetValidTransitions = jest.fn();
 jest.mock("@/services/status-workflow-service", () => ({
@@ -58,6 +70,8 @@ describe("POST /api/prds/[id]/status", () => {
       user: { id: "user_author", email: "author@example.com", role: "AUTHOR" },
     });
 
+    mockPrdFindUnique.mockResolvedValue({ projectId: "proj_001" });
+    mockEnsureRepoClone.mockResolvedValue({ cloneDir: "/repos/user_author/proj_001" });
     mockTransition.mockResolvedValue(undefined);
   });
 
@@ -92,6 +106,20 @@ describe("POST /api/prds/[id]/status", () => {
       "DRAFT",
       "Needs revision",
     );
+  });
+
+  it("should return error when repo clone fails on IN_REVIEW transition", async () => {
+    mockEnsureRepoClone.mockResolvedValue(
+      new Response(JSON.stringify({ error: "No GitHub OAuth token available" }), { status: 401 }),
+    );
+
+    const response = await POST(
+      postRequest({ to: "IN_REVIEW" }) as any,
+      makeParams("prd_001") as any,
+    );
+
+    expect(response.status).toBe(401);
+    expect(mockTransition).not.toHaveBeenCalled();
   });
 
   it("should return error when transition is invalid", async () => {

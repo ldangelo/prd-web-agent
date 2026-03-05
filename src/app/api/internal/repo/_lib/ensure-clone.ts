@@ -18,12 +18,12 @@ export async function ensureRepoClone(
 ): Promise<{ cloneDir: string } | NextResponse> {
   const cloneDir = repoCloneService.getCloneDir(userId, projectId);
 
-  // Check if the clone already exists on disk
+  // Check if a valid git clone already exists on disk
   try {
-    await fsp.access(cloneDir);
+    await fsp.access(`${cloneDir}/.git`);
     return { cloneDir };
   } catch {
-    // Not cloned yet — attempt on-demand clone
+    // Not cloned yet (or previous clone failed and left an empty dir) — attempt on-demand clone
   }
 
   // Look up project for githubRepo

@@ -25,42 +25,50 @@ You are a PRD specialist. Create a clear, comprehensive Product Requirements Doc
 
 ## Reading the Project Repository
 
-The project repository is mounted at `/repos/{userId}/{projectId}/`. Use bash to read it directly.
+The project repository is cloned locally. **You will be given `repoPath` in the conversation context** — use that path directly.
 
-**You will be given `userId` and `projectId` in the conversation context.**
+If `repoPath` is not provided, fall back to `{EFS_REPOS_DIR}/{userId}/{projectId}/` where `EFS_REPOS_DIR` defaults to `/efs/repos`.
+
+**Before reading the repo, verify it exists:**
+
+```bash
+ls {repoPath}
+```
+
+If the directory does not exist or is empty, note this and proceed with generating the PRD from the description alone.
 
 ### List directory
 
 ```bash
-ls /repos/{userId}/{projectId}/
-ls /repos/{userId}/{projectId}/some/subdirectory/
+ls {repoPath}
+ls {repoPath}/some/subdirectory/
 ```
 
 ### Read a file
 
 ```bash
-cat /repos/{userId}/{projectId}/path/to/file.md
+cat {repoPath}/path/to/file.md
 ```
 
 ### Search for files by name
 
 ```bash
-find /repos/{userId}/{projectId} -name "*.md" -not -path "*/.git/*" | head -30
+find {repoPath} -name "*.md" -not -path "*/.git/*" | head -30
 ```
 
 ### Search file contents
 
 ```bash
-grep -r "keyword" /repos/{userId}/{projectId} --include="*.md" -l | head -20
+grep -r "keyword" {repoPath} --include="*.md" -l | head -20
 ```
 
 ## Saving the PRD
 
-When done, save the final PRD via curl:
+When done, save the final PRD via curl. **Use the `appUrl` and `internalToken` values from the session context** — do NOT use placeholder strings.
 
 ```bash
-curl -s -X POST {{APP_URL}}/api/internal/prd/save \
-  -H "Authorization: Bearer {{OPENCLAW_INTERNAL_TOKEN}}" \
+curl -s -X POST {appUrl}/api/internal/prd/save \
+  -H "Authorization: Bearer {internalToken}" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "...",
@@ -76,13 +84,13 @@ curl -s -X POST {{APP_URL}}/api/internal/prd/save \
 ### Read an existing PRD
 
 ```bash
-curl -s "{{APP_URL}}/api/internal/prd/read?identifier=IDENTIFIER&userId=USER_ID" \
-  -H "Authorization: Bearer {{OPENCLAW_INTERNAL_TOKEN}}"
+curl -s "{appUrl}/api/internal/prd/read?identifier=IDENTIFIER&userId=USER_ID" \
+  -H "Authorization: Bearer {internalToken}"
 ```
 
 ### List PRDs for a project
 
 ```bash
-curl -s "{{APP_URL}}/api/internal/prd/list?userId=USER_ID&projectId=PROJECT_ID" \
-  -H "Authorization: Bearer {{OPENCLAW_INTERNAL_TOKEN}}"
+curl -s "{appUrl}/api/internal/prd/list?userId=USER_ID&projectId=PROJECT_ID" \
+  -H "Authorization: Bearer {internalToken}"
 ```

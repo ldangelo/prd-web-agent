@@ -53,6 +53,11 @@ jest.mock("@/services/agent/agent-session-manager", () => ({
   })),
 }));
 
+const mockEnsureRepoClone = jest.fn();
+jest.mock("@/app/api/internal/repo/_lib/ensure-clone", () => ({
+  ensureRepoClone: (...args: unknown[]) => mockEnsureRepoClone(...args),
+}));
+
 // ---------------------------------------------------------------------------
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
@@ -135,6 +140,7 @@ describe("POST /api/prds/[id]/generate", () => {
     // prompt resolves immediately; tests fire agent events manually via capturedListener
     mockPrompt.mockResolvedValue(undefined);
     mockDisposeAll.mockResolvedValue(undefined);
+    mockEnsureRepoClone.mockResolvedValue({ cloneDir: "/repos/user/proj" });
 
     // PrdVersion.findFirst returns null by default (no previous versions)
     mockPrdVersionFindFirst.mockResolvedValue(null);

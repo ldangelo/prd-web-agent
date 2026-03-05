@@ -12,7 +12,23 @@ import { handleApiError, NotFoundError, ForbiddenError } from "@/lib/api/errors"
 import { validateBody } from "@/lib/api/validate";
 import { canAccessPrd } from "@/services/prd-access-service";
 import { listComments, createComment } from "@/services/comment-service";
+import type { ThreadedComment } from "@/services/comment-service";
+import type { CommentData } from "@/types/comments";
 import { prisma } from "@/lib/prisma";
+
+function toCommentData(c: ThreadedComment): CommentData {
+  return {
+    id: c.id,
+    authorId: c.authorId,
+    authorName: c.author.name ?? c.author.email,
+    body: c.body,
+    parentId: c.parentId ?? null,
+    resolved: c.resolved,
+    resolvedBy: c.resolvedBy ?? undefined,
+    createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : c.createdAt,
+    replies: (c.replies ?? []).map(toCommentData),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -48,7 +64,7 @@ export async function GET(
     }
 
     const comments = await listComments(id);
-    return apiSuccess(comments);
+    return apiSuccess(comments.map(toCommentData));
   } catch (error) {
     return handleApiError(error);
   }
@@ -87,7 +103,7 @@ export async function POST(
       data.parentId,
     );
 
-    return apiSuccess(comment, 201);
+    return apiSuccess(toCommentData(comment), 201);
   } catch (error) {
     return handleApiError(error);
   }
