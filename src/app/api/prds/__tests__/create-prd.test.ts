@@ -89,7 +89,9 @@ describe("POST /api/prds", () => {
   });
 
   it("should create a PRD with valid data and return 201", async () => {
-    const response = await POST(postRequest({ projectId: "proj_001" }));
+    const response = await POST(
+      postRequest({ projectId: "proj_001", title: "Auth PRD" }),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(201);
@@ -101,6 +103,7 @@ describe("POST /api/prds", () => {
     const response = await POST(
       postRequest({
         projectId: "proj_001",
+        title: "Auth PRD",
         description: "A new authentication PRD",
       }),
     );
@@ -114,6 +117,7 @@ describe("POST /api/prds", () => {
     await POST(
       postRequest({
         projectId: "proj_001",
+        title: "My PRD",
         description: "Some description",
       }),
     );
@@ -121,14 +125,24 @@ describe("POST /api/prds", () => {
     expect(mockPrdCreate).toHaveBeenCalledTimes(1);
     const createArg = mockPrdCreate.mock.calls[0][0];
     expect(createArg.data).toMatchObject({
+      title: "My PRD",
+      description: "Some description",
       projectId: "proj_001",
       authorId: "user_1",
       status: "DRAFT",
     });
   });
 
+  it("should return 422 when title is missing", async () => {
+    const response = await POST(postRequest({ projectId: "proj_001" }));
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body).toHaveProperty("error");
+  });
+
   it("should return 422 when projectId is missing", async () => {
-    const response = await POST(postRequest({}));
+    const response = await POST(postRequest({ title: "My PRD" }));
     const body = await response.json();
 
     expect(response.status).toBe(422);
@@ -151,7 +165,9 @@ describe("POST /api/prds", () => {
       new UnauthorizedError("Authentication required"),
     );
 
-    const response = await POST(postRequest({ projectId: "proj_001" }));
+    const response = await POST(
+      postRequest({ projectId: "proj_001", title: "My PRD" }),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -161,7 +177,9 @@ describe("POST /api/prds", () => {
   it("should return 404 when project does not exist", async () => {
     mockProjectFindUnique.mockResolvedValue(null);
 
-    const response = await POST(postRequest({ projectId: "proj_999" }));
+    const response = await POST(
+      postRequest({ projectId: "proj_999", title: "My PRD" }),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(404);
@@ -171,7 +189,9 @@ describe("POST /api/prds", () => {
   it("should return 403 when user is not a project member", async () => {
     mockProjectMemberFindUnique.mockResolvedValue(null);
 
-    const response = await POST(postRequest({ projectId: "proj_001" }));
+    const response = await POST(
+      postRequest({ projectId: "proj_001", title: "My PRD" }),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(403);

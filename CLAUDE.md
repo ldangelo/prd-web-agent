@@ -2,31 +2,34 @@
 
 ## Project Overview
 
-A Next.js 14 web application for AI-powered PRD (Product Requirements Document) lifecycle management. Provides a web UI for non-technical product managers to create, refine, and submit PRDs using the Ensemble workflow.
+Next.js 14 web app for AI-powered PRD lifecycle management. Product managers create,
+refine, and submit PRDs through a chat-driven UI backed by Claude (via OpenClaw gateway).
 
-## Architecture
+**Active bookmarks:** `feat/per-project-roles`, `fix/prd-generation-bugs`, `fix/ui-api-auth-bugs`
 
-```
-prd-web-agent/
-├── src/                   # Application source
-│   ├── app/               # Next.js App Router pages and API routes
-│   ├── components/        # React components (chat, comments, dashboard, notifications, prd, projects, submission, workflow)
-│   ├── lib/               # Shared utilities (api, auth, telemetry)
-│   ├── services/          # Business logic (agent, integrations, websocket)
-│   └── types/             # TypeScript type definitions
-├── prisma/                # Database schema and migrations
-├── helm/                  # Kubernetes Helm charts
-├── public/                # Static assets
-├── devbox.json            # Reproducible dev environment (Nix)
-├── process-compose.yaml   # Orchestrated startup
-├── docker-compose.yml     # Local services (postgres, redis, opensearch)
-├── Dockerfile             # Production container
-└── docs/                  # PRD, TRD, standards
-```
+---
 
-## Source Control
+## Quick Reference
 
-**Use jj (Jujutsu) — NOT git directly.**
+| Task | Command |
+|------|---------|
+| Start dev server | `devbox run dev` |
+| Run tests | `devbox run test` |
+| DB migrate | `devbox run db:migrate` |
+| Start all services | `process-compose up` |
+| Start Docker services | `devbox run services:up` |
+| Find work | `bd ready` |
+| Claim issue | `bd update <id> --status in_progress` |
+| Close issue | `bd close <id>` |
+| VCS status | `jj status` |
+| New change | `jj new` |
+| Describe change | `jj describe -m "feat: ..."` |
+
+---
+
+## Source Control — jj (Jujutsu)
+
+**ALWAYS use `jj` — NEVER `git` directly.**
 
 ```bash
 jj status              # working copy status
@@ -36,9 +39,41 @@ jj new                 # start new change
 jj bookmark set <name> # set bookmark (branch equivalent)
 ```
 
-## Issue Tracking
+---
 
-**Use bd (beads)** — `bd ready`, `bd show <id>`, `bd update <id> --status in_progress`, `bd close <id>`.
+## Architecture
+
+```
+src/
+├── app/
+│   ├── api/           # Next.js App Router route handlers
+│   │   ├── prds/      # PRD CRUD, comments, generate, status
+│   │   ├── projects/  # Project + member management
+│   │   ├── agent/     # Agent session endpoints
+│   │   ├── github/    # GitHub submission integration
+│   │   ├── search/    # OpenSearch queries
+│   │   └── internal/  # Internal webhooks (prd/save, repo/*)
+│   └── (pages)/       # App Router UI pages
+├── components/        # React UI (chat, comments, dashboard, prd, projects, workflow)
+├── lib/               # Utilities: api/, auth/, telemetry/
+├── services/          # Business logic
+│   ├── agent/         # OpenClaw agent session + PRD generator
+│   ├── openclaw/      # OpenClaw API client
+│   ├── integrations/  # External integrations
+│   ├── comment-service.ts
+│   ├── status-workflow-service.ts
+│   ├── prd-access-service.ts
+│   ├── repo-clone-service.ts
+│   ├── search-service.ts
+│   └── notification-service.ts
+└── types/             # Shared TypeScript types
+
+prisma/schema.prisma   # Models: User, Project, ProjectMember, Prd, PrdVersion,
+                       #   PrdCoAuthor, Comment, Notification, AuditEntry,
+                       #   GlobalSettings, UserLlmSettings
+```
+
+---
 
 ## Tech Stack
 
@@ -47,53 +82,76 @@ jj bookmark set <name> # set bookmark (branch equivalent)
 | Framework | Next.js 14, App Router, TypeScript |
 | ORM | Prisma 5 + PostgreSQL 15 |
 | Auth | NextAuth.js v5 (OAuth: Google, Okta, Azure AD) |
+| AI Gateway | OpenClaw (Docker container, port 18790) |
 | Realtime | Socket.io + Redis adapter |
 | Search | OpenSearch |
 | Styling | Tailwind CSS 3 |
 | Testing | Jest + React Testing Library |
-| Telemetry | OpenTelemetry (traces, metrics, structured logs via Pino) |
+| Telemetry | OpenTelemetry (traces, metrics, Pino structured logs) |
 | Infra | Docker, Helm, LocalStack (S3/SQS) |
 
-## Dev Environment (devbox)
+---
 
-```bash
-devbox shell              # enter reproducible env
-devbox run setup          # npm install + prisma generate
-devbox run services:up    # docker containers (postgres, redis, opensearch)
-devbox run db:migrate     # prisma migrate dev
-devbox run dev            # next.js dev server
-devbox run doctor         # check everything is healthy
-devbox run test           # jest
-```
+## Key Conventions
 
-Full orchestrated startup: `process-compose up` (docker → migrate → next dev)
+- **API responses**: Always wrapped `{ data: T }` via `apiSuccess()`. Clients must use `json.data`.
+- **Logging**: Use `logger` from `@/lib/logger` — never `console.error/log`.
+  - Pattern: `logger.error({ error }, "message")`
+- **API routes**: `src/app/api/<resource>/route.ts`
+- **Tests**: Co-located `__tests__/` next to source files
+- **Commit style**: `feat(TASK-NNN): description` or `feat: description`
+- **Env config**: `.env.example` is the template; `.env` is local (gitignored)
+- **Error handling**: Use `handleApiError`, `NotFoundError`, `ForbiddenError` from `@/lib/api/errors`
+
+---
+
+## OpenClaw / AI Gateway
+
+- **Docker container**: `prd-web-agent-openclaw`, port **18790**
+- **Token env var**: `OPENCLAW_GATEWAY_TOKEN` in `.env`
+- **URL env var**: `OPENCLAW_GATEWAY_URL=http://localhost:18790`
+- The Docker container inherits `OPENCLAW_GATEWAY_TOKEN` from launchd — `.env` must match.
+- Local LaunchAgent openclaw (port 18789) is NOT used by this app.
+- Agent sessions: `src/services/agent/`, `src/services/openclaw/`
+
+---
 
 ## Key Paths
 
-- **App source**: `src/`
-  - `app/` — Next.js App Router pages and API routes
-  - `components/` — React components
-  - `lib/` — Shared utilities (api, auth, telemetry)
-  - `services/` — Business logic (agent, integrations, websocket)
-  - `types/` — TypeScript type definitions
 - **Prisma schema**: `prisma/schema.prisma`
+- **Auth config**: `src/lib/auth.ts`, `src/middleware.ts`
+- **API helpers**: `src/lib/api/response.ts`, `src/lib/api/errors.ts`
+- **PRD generator**: `src/services/agent/prd-generator.ts`
+- **Status workflow**: `src/services/status-workflow-service.ts`
 - **Docker compose**: `docker-compose.yml`
 - **Helm charts**: `helm/`
-- **PRD**: `docs/PRD/prd-web-agent-prd.md`
-- **TRD**: `docs/TRD/prd-web-agent-trd.md`
+- **PRD doc**: `docs/PRD/prd-web-agent-prd.md`
+- **TRD doc**: `docs/TRD/prd-web-agent-trd.md`
 
-## Conventions
-
-- **Commit style**: `feat(TASK-NNN): description` or `feat: description`
-- **API routes**: `src/app/api/<resource>/route.ts` (Next.js App Router conventions)
-- **Tests**: Co-located in `__tests__/` directories adjacent to source
-- **Env config**: `.env.example` is the template; `.env` is local (gitignored)
+---
 
 ## Session Workflow
 
-1. `bd ready` — find available work
-2. `bd update <id> --status in_progress` — claim it
-3. Do the work, run tests (`devbox run test`)
-4. `bd close <id>` — mark done
-5. `jj describe -m "feat: ..."` — describe the change
-6. `bd dolt push` — push beads issue database to Dolt remote
+```bash
+# Start work
+bd ready                              # find available issues
+bd update <id> --status in_progress   # claim it
+
+# Do the work
+devbox run test                       # run tests
+
+# Finish
+bd close <id>                         # mark done
+jj describe -m "feat: ..."            # describe the change
+bd dolt push                          # sync beads to Dolt remote
+```
+
+---
+
+## Common Pitfalls
+
+- **API envelope**: All API responses are `{ data: T }` — always destructure `json.data` in clients.
+- **jj vs git**: Never use `git commit`, `git push`, etc. Use `jj` equivalents.
+- **OpenClaw token mismatch**: If getting 401s, verify `.env` `OPENCLAW_GATEWAY_TOKEN` matches the Docker container's launchd-injected value.
+- **Prisma enum changes**: Require a migration file in `prisma/migrations/`.
+- **Auth in API routes**: Use `requireAuth()` from `@/lib/auth` — never trust client-supplied user IDs.

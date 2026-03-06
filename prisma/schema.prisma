@@ -116,6 +116,7 @@ model ProjectMember {
 model Prd {
   id              String      @id @default(cuid())
   title           String
+  description     String?
   projectId       String
   authorId        String
   status          PrdStatus   @default(DRAFT)
